@@ -46,14 +46,13 @@ void TextRenderer_PutString(TextRenderer* renderer, const char* string) {
 void TextRenderer_PutUInt(TextRenderer* renderer, uint64_t value) {
 	uint64_t temp = value;
 
-	uint8_t stringSize;
+	uint8_t stringSize = 0;
 	while (temp / 10) {
 		temp /= 10;
 		stringSize++;
 	}
 
-	char buffer[stringSize + 1];
-	buffer[stringSize] = '\0';
+	char buffer[stringSize + 2];
 
 	uint8_t index = 0;
 	while (value / 10) {
@@ -66,6 +65,8 @@ void TextRenderer_PutUInt(TextRenderer* renderer, uint64_t value) {
 
 	uint8_t remainder = value % 10;
 	buffer[stringSize - index] = remainder + '0';
+
+	buffer[stringSize + 1] = '\0';
 
 	TextRenderer_PutString(renderer, buffer);
 }
