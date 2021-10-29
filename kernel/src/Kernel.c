@@ -23,5 +23,11 @@ void _start(Framebuffer* framebuffer, PSF1_Font* font) {
 	TextRenderer_PutInt(&textRenderer, -123987);
 	TextRenderer_PutString(&textRenderer, "\r\n");
 
+	textRenderer.Color = 0xFFFF00FF;
+
+	TextRenderer_PutString(&textRenderer, "This is a pointer: ");
+	TextRenderer_PutPtr(&textRenderer, framebuffer->BaseAddress);
+	TextRenderer_PutString(&textRenderer, "\r\n");
+
 	while (1);
 }

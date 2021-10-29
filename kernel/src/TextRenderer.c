@@ -44,9 +44,9 @@ void TextRenderer_PutString(TextRenderer* renderer, const char* string) {
 }
 
 void TextRenderer_PutUInt(TextRenderer* renderer, uint64_t value) {
-	uint8_t stringSize;
 	uint64_t temp = value;
 
+	uint8_t stringSize;
 	while (temp / 10) {
 		temp /= 10;
 		stringSize++;
@@ -76,4 +76,21 @@ void TextRenderer_PutInt(TextRenderer* renderer, int64_t value) {
 		value *= -1;
 	}
 	TextRenderer_PutUInt(renderer, (uint64_t)value);
+}
+
+void TextRenderer_PutPtr(TextRenderer* renderer, void* ptr) {
+	char buffer[17];
+	buffer[16] = '\0';
+
+	uint8_t size = 8 * 2 - 1;
+	for (uint8_t i = 0; i < 8; i++) {
+		uint8_t* valPtr = (uint8_t*)&ptr + i;
+		uint8_t temp = (*valPtr & 0xF0) >> 4;
+		buffer[size - (i * 2 + 1)] = temp + (temp > 9 ? 'A' - 10 : '0');
+		temp = (*valPtr & 0x0F);
+		buffer[size - (i * 2 + 0)] = temp + (temp > 9 ? 'A' - 10 : '0');
+	}
+
+	TextRenderer_PutString(renderer, "0x");
+	TextRenderer_PutString(renderer, buffer);
 }

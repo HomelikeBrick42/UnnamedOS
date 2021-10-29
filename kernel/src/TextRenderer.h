@@ -20,3 +20,4 @@ void TextRenderer_PutChar(TextRenderer* renderer, char character);
 void TextRenderer_PutString(TextRenderer* renderer, const char* string);
 void TextRenderer_PutUInt(TextRenderer* renderer, uint64_t value);
 void TextRenderer_PutInt(TextRenderer* renderer, int64_t value);
+void TextRenderer_PutPtr(TextRenderer* renderer, void* ptr);
