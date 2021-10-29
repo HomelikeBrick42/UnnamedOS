@@ -27,6 +27,14 @@ typedef struct PSF1_Font {
 	void* GlyphBuffer;
 } PSF1_Font;
 
+typedef struct BootInfo {
+	Framebuffer* Framebuffer;
+	PSF1_Font* Font;
+	EFI_MEMORY_DESCRIPTOR* MemoryMapDescriptors;
+	UINTN MemoryMapDescriptorSize;
+	UINTN MemoryMapSize;
+} BootInfo;
+
 EFI_FILE* LoadFile(EFI_FILE* Directory, CHAR16* Path, EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable) {
 	EFI_FILE* LoadedFile;
 
@@ -113,11 +121,11 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 
 	EFI_FILE* KernelFile = LoadFile(NULL, L"kernel.elf", ImageHandle, SystemTable);
 	if (!KernelFile) {
-		Print(L"Failed not load kernel\n\r");
+		Print(L"Failed not load kernel\r\n");
 		return EFI_LOAD_ERROR;
 	}
 
-	Print(L"Kernel found\n\r");
+	Print(L"Kernel found\r\n");
 
 	Elf64_Ehdr header;
 	{
@@ -137,11 +145,11 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 		header.e_type != ET_EXEC ||
 		header.e_machine != EM_X86_64 ||
 		header.e_version != EV_CURRENT) {
-		Print(L"Kernel is corrupted\n\r");
+		Print(L"Kernel is corrupted\r\n");
 		return EFI_LOAD_ERROR;
 	}
 
-	Print(L"Kernel header verified\n\r");
+	Print(L"Kernel header verified\r\n");
 
 	Elf64_Phdr* phdrs;
 	{
@@ -173,31 +181,51 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 	Framebuffer framebuffer;
 	EFI_STATUS gopStatus = InitialiseGOP(&framebuffer);
 	if (EFI_ERROR(gopStatus)) {
-		Print(L"Failed to initialise GOP\n\r");
+		Print(L"Failed to initialise GOP\r\n");
 		return gopStatus;
 	}
 
-	Print(L"Initialised GOP\n\r");
-	Print(L"    BaseAddress = 0x%llx\n\r", framebuffer.BaseAddress);
-	Print(L"    BufferSize = 0x%llx\n\r", framebuffer.BufferSize);
-	Print(L"    Width = %u\n\r", framebuffer.Width);
-	Print(L"    Height = %u\n\r", framebuffer.Height);
-	Print(L"    PixelsPerScanLine = %u\n\r", framebuffer.PixelsPerScanLine);
+	Print(L"Initialised GOP\r\n");
+	Print(L"    BaseAddress = 0x%llx\r\n", framebuffer.BaseAddress);
+	Print(L"    BufferSize = 0x%llx\r\n", framebuffer.BufferSize);
+	Print(L"    Width = %u\r\n", framebuffer.Width);
+	Print(L"    Height = %u\r\n", framebuffer.Height);
+	Print(L"    PixelsPerScanLine = %u\r\n", framebuffer.PixelsPerScanLine);
 
 	PSF1_Font font;
 	EFI_STATUS fontStatus = LoadPSF1Font(&font, NULL, L"zap-light16.psf", ImageHandle, SystemTable);
 	if (EFI_ERROR(fontStatus)) {
-		Print(L"Failed to load font\n\r");
+		Print(L"Failed to load font\r\n");
 		return fontStatus;
 	}
 
-	Print(L"Font loaded\n\r");
+	Print(L"Font loaded\r\n");
 
-	typedef __attribute__((sysv_abi)) void KernelStart(Framebuffer*, PSF1_Font*);
+	EFI_MEMORY_DESCRIPTOR* Map;
+	UINTN MapSize, MapKey;
+	UINTN DescriptorSize;
+	UINT32 DescriptorVersion;
+	{
+		SystemTable->BootServices->GetMemoryMap(&MapSize, NULL, &MapKey, &DescriptorSize, &DescriptorVersion);
+		SystemTable->BootServices->AllocatePool(EfiLoaderData, MapSize, (void**)&Map);
+		SystemTable->BootServices->GetMemoryMap(&MapSize, Map, &MapKey, &DescriptorSize, &DescriptorVersion);
+	}
+
+	typedef __attribute__((sysv_abi)) void KernelStart(BootInfo*);
 
 	KernelStart* kernelStart = (KernelStart*)header.e_entry;
 
-	kernelStart(&framebuffer, &font);
+	BootInfo info = {
+		.Framebuffer = &framebuffer,
+		.Font = &font,
+		.MemoryMapDescriptors = Map,
+		.MemoryMapDescriptorSize = DescriptorSize,
+		.MemoryMapSize = MapSize,
+	};
+
+	SystemTable->BootServices->ExitBootServices(ImageHandle, MapKey);
+
+	kernelStart(&info);
 
 	return EFI_SUCCESS;
 }
