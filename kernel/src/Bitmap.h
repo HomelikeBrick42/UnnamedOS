@@ -5,7 +5,7 @@
 
 typedef struct Bitmap {
 	void* Buffer;
-	size_t Size;
+	size_t Size; // NOTE: This size is in bits
 } Bitmap;
 
 void Bitmap_Create(Bitmap* bitmap, void* buffer, size_t size);
