@@ -99,9 +99,10 @@ void PageFrameAllocator_FreePage(void* address) {
 	if (!Bitmap_GetBit(&PageBitmap, index)) {
 		return;
 	}
-	Bitmap_SetBit(&PageBitmap, index, 0);
-	FreeMemory += 4096;
-	UsedMemory -= 4096;
+	if (Bitmap_SetBit(&PageBitmap, index, 0)) {
+		FreeMemory += 4096;
+		UsedMemory -= 4096;
+	}
 }
 
 void PageFrameAllocator_FreePages(void* address, uint64_t count) {
@@ -115,9 +116,10 @@ void PageFrameAllocator_LockPage(void* address) {
 	if (Bitmap_GetBit(&PageBitmap, index)) {
 		return;
 	}
-	Bitmap_SetBit(&PageBitmap, index, 1);
-	FreeMemory -= 4096;
-	UsedMemory += 4096;
+	if (Bitmap_SetBit(&PageBitmap, index, 1)) {
+		FreeMemory -= 4096;
+		UsedMemory += 4096;
+	}
 }
 
 void PageFrameAllocator_LockPages(void* address, uint64_t count) {
@@ -131,9 +133,10 @@ static void UnreservePage(void* address) {
 	if (!Bitmap_GetBit(&PageBitmap, index)) {
 		return;
 	}
-	Bitmap_SetBit(&PageBitmap, index, 0);
-	FreeMemory += 4096;
-	ReservedMemory -= 4096;
+	if (Bitmap_SetBit(&PageBitmap, index, 0)) {
+		FreeMemory += 4096;
+		ReservedMemory -= 4096;
+	}
 }
 
 static void UnreservePages(void* address, uint64_t count) {
@@ -147,9 +150,10 @@ static void ReservePage(void* address) {
 	if (Bitmap_GetBit(&PageBitmap, index)) {
 		return;
 	}
-	Bitmap_SetBit(&PageBitmap, index, 1);
-	FreeMemory -= 4096;
-	ReservedMemory += 4096;
+	if (Bitmap_SetBit(&PageBitmap, index, 1)) {
+		FreeMemory -= 4096;
+		ReservedMemory += 4096;
+	}
 }
 
 static void ReservePages(void* address, uint64_t count) {

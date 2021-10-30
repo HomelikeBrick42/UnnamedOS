@@ -47,19 +47,21 @@ static void PrintMemoryUsage(TextRenderer* textRenderer) {
 	TextRenderer_PutString(textRenderer, " KB\r\n");
 }
 
-void _start(BootInfo* bootInfo) {
-	TextRenderer textRenderer; //                                                       A R G B
-	TextRenderer_Create(&textRenderer, bootInfo->Framebuffer, bootInfo->Font, 10, 20, 0xFF00FF00);
-
+static uint8_t SetupPagesAndMemoryMapping(BootInfo* bootInfo, TextRenderer* textRenderer) {
 	if (!PageFrameAllocator_Init(bootInfo->MemoryMapDescriptors, bootInfo->MemoryMapSize, bootInfo->MemoryMapDescriptorSize)) {
-		textRenderer.Color = 0xFFFF0000;
-		TextRenderer_PutString(&textRenderer, "Failed to iniialize PageFrameAllocator\r\n");
-		return;
+		textRenderer->Color = 0xFFFF0000;
+		TextRenderer_PutString(textRenderer, "Failed to iniialize PageFrameAllocator\r\n");
+		return 0;
 	}
 
 	uint64_t kernelSize = (uint64_t)&_KernelEnd - (uint64_t)&_KernelStart;
 	uint64_t kernelPages = kernelSize / 4096 + 1;
 	PageFrameAllocator_LockPages(&_KernelStart, kernelPages);
+
+	uint64_t framebufferBase = (uint64_t)bootInfo->Framebuffer->BaseAddress;
+	uint64_t framebufferSize = (uint64_t)bootInfo->Framebuffer->BufferSize + 4096;
+
+	PageFrameAllocator_LockPages((void*)framebufferBase, framebufferSize / 4096 + 1);
 
 	PageTable* PML4 = (PageTable*)PageFrameAllocator_RequestPage();
 	SetMemory(PML4, 0, 4096);
@@ -68,14 +70,24 @@ void _start(BootInfo* bootInfo) {
 		MapMemory(PML4, (void*)i, (void*)i);
 	}
 
-	uint64_t framebufferBase = (uint64_t)bootInfo->Framebuffer->BaseAddress;
-	uint64_t framebufferSize = (uint64_t)bootInfo->Framebuffer->BufferSize + 4096;
-
 	for (uint64_t i = framebufferBase; i < framebufferBase + framebufferSize; i += 4096) {
 		MapMemory(PML4, (void*)i, (void*)i);
 	}
 
 	asm ("mov %0, %%cr3" : : "r" (PML4));
+
+	SetMemory(bootInfo->Framebuffer->BaseAddress, 0, bootInfo->Framebuffer->BufferSize);
+
+	return 1;
+}
+
+void _start(BootInfo* bootInfo) {
+	TextRenderer textRenderer; //                                                       A R G B
+	TextRenderer_Create(&textRenderer, bootInfo->Framebuffer, bootInfo->Font, 10, 20, 0xFF00FF00);
+
+	if (!SetupPagesAndMemoryMapping(bootInfo, &textRenderer)) {
+		return;
+	}
 
 	PrintMemoryUsage(&textRenderer);
 

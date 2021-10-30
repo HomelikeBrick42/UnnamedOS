@@ -10,4 +10,4 @@ typedef struct Bitmap {
 
 void Bitmap_Create(Bitmap* bitmap, void* buffer, size_t size);
 uint8_t Bitmap_GetBit(Bitmap* bitmap, uint64_t index);
-void Bitmap_SetBit(Bitmap* bitmap, uint64_t index, uint8_t value);
+uint8_t Bitmap_SetBit(Bitmap* bitmap, uint64_t index, uint8_t value);
