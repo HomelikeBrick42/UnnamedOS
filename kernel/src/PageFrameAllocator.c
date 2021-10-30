@@ -10,10 +10,6 @@ static uint64_t ReservedMemory;
 static uint64_t UsedMemory;
 
 static uint64_t GetMemorySize(EfiMemoryDescriptor* memoryMapDescriptors, uint64_t memoryMapEntries, uint64_t memoryMapDescriptorSize);
-static void FreePage(void* address);
-static void FreePages(void* address, uint64_t count);
-static void LockPage(void* address);
-static void LockPages(void* address, uint64_t count);
 static void UnreservePage(void* address);
 static void UnreservePages(void* address, uint64_t count);
 static void ReservePage(void* address);
@@ -48,7 +44,7 @@ uint8_t PageFrameAllocator_Init(EfiMemoryDescriptor* memoryMapDescriptors, uint6
 	PageBitmap.Buffer = largestFreeMemorySegment;
 	SetMemory(PageBitmap.Buffer, 0, bitMapSize);
 
-	LockPages(PageBitmap.Buffer, bitMapSize);
+	PageFrameAllocator_LockPages(PageBitmap.Buffer, bitMapSize);
 
 	for (uint64_t i = 0; i < memoryMapEntries; i++) {
 		EfiMemoryDescriptor* descriptor = (EfiMemoryDescriptor*)((uint64_t)memoryMapDescriptors + i * memoryMapDescriptorSize);
@@ -76,6 +72,17 @@ uint64_t PageFrameAllocator_GetReservedMemory(void) {
 	return ReservedMemory;
 }
 
+void* PageFrameAllocator_RequestPage(void) {
+	for (uint64_t i = 0; i < PageBitmap.Size; i++) {
+		if (!Bitmap_GetBit(&PageBitmap, i)) {
+			void* address = (void*)(i * 4096);
+			PageFrameAllocator_LockPage(address);
+			return address;
+		}
+	}
+	return NULL;
+}
+
 static uint64_t GetMemorySize(EfiMemoryDescriptor* memoryMapDescriptors, uint64_t memoryMapEntries, uint64_t memoryMapDescriptorSize) {
 	uint64_t MemorySizeBytes = 0;
 
@@ -87,7 +94,7 @@ static uint64_t GetMemorySize(EfiMemoryDescriptor* memoryMapDescriptors, uint64_
 	return MemorySizeBytes;
 }
 
-static void FreePage(void* address) {
+void PageFrameAllocator_FreePage(void* address) {
 	uint64_t index = (uint64_t)address / 4096;
 	if (!Bitmap_GetBit(&PageBitmap, index)) {
 		return;
@@ -97,13 +104,13 @@ static void FreePage(void* address) {
 	UsedMemory -= 4096;
 }
 
-static void FreePages(void* address, uint64_t count) {
+void PageFrameAllocator_FreePages(void* address, uint64_t count) {
 	for (uint64_t i = 0; i < count; i++) {
-		FreePage((void*)((uint64_t)address + i * 4096));
+		PageFrameAllocator_FreePage((void*)((uint64_t)address + i * 4096));
 	}
 }
 
-static void LockPage(void* address) {
+void PageFrameAllocator_LockPage(void* address) {
 	uint64_t index = (uint64_t)address / 4096;
 	if (Bitmap_GetBit(&PageBitmap, index)) {
 		return;
@@ -113,9 +120,9 @@ static void LockPage(void* address) {
 	UsedMemory += 4096;
 }
 
-static void LockPages(void* address, uint64_t count) {
+void PageFrameAllocator_LockPages(void* address, uint64_t count) {
 	for (uint64_t i = 0; i < count; i++) {
-		LockPage((void*)((uint64_t)address + i * 4096));
+		PageFrameAllocator_LockPage((void*)((uint64_t)address + i * 4096));
 	}
 }
 

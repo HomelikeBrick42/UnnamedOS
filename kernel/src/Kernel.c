@@ -17,6 +17,35 @@ typedef struct BootInfo {
 	uint64_t MemoryMapSize;
 } BootInfo;
 
+extern uint64_t _KernelStart;
+extern uint64_t _KernelEnd;
+
+static void PrintMemoryUsage(TextRenderer* textRenderer) {
+	textRenderer->Color = 0xFF00FF00;
+	TextRenderer_PutString(textRenderer, "Total Memory Size: ");
+	textRenderer->Color = 0xFFFF00FF;
+	TextRenderer_PutUInt(textRenderer, PageFrameAllocator_GetMemorySize() / 1024);
+	TextRenderer_PutString(textRenderer, " KB\r\n");
+
+	textRenderer->Color = 0xFF00FF00;
+	TextRenderer_PutString(textRenderer, "Free Memory Size: ");
+	textRenderer->Color = 0xFFFF00FF;
+	TextRenderer_PutUInt(textRenderer, PageFrameAllocator_GetFreeMemory() / 1024);
+	TextRenderer_PutString(textRenderer, " KB\r\n");
+
+	textRenderer->Color = 0xFF00FF00;
+	TextRenderer_PutString(textRenderer, "Used Memory Size: ");
+	textRenderer->Color = 0xFFFF00FF;
+	TextRenderer_PutUInt(textRenderer, PageFrameAllocator_GetUsedMemory() / 1024);
+	TextRenderer_PutString(textRenderer, " KB\r\n");
+
+	textRenderer->Color = 0xFF00FF00;
+	TextRenderer_PutString(textRenderer, "Reserved Memory Size: ");
+	textRenderer->Color = 0xFFFF00FF;
+	TextRenderer_PutUInt(textRenderer, PageFrameAllocator_GetReservedMemory() / 1024);
+	TextRenderer_PutString(textRenderer, " KB\r\n");
+}
+
 void _start(BootInfo* bootInfo) {
 	TextRenderer textRenderer; //                                                       A R G B
 	TextRenderer_Create(&textRenderer, bootInfo->Framebuffer, bootInfo->Font, 10, 20, 0xFF00FF00);
@@ -27,33 +56,11 @@ void _start(BootInfo* bootInfo) {
 		return;
 	}
 
-	textRenderer.Color = 0xFF00FF00;
-	TextRenderer_PutString(&textRenderer, "Total Memory Size: ");
-	textRenderer.Color = 0xFFFF00FF;
-	TextRenderer_PutUInt(&textRenderer, PageFrameAllocator_GetMemorySize() / 1024);
-	TextRenderer_PutString(&textRenderer, " KB");
-	TextRenderer_PutString(&textRenderer, "\r\n");
+	uint64_t kernelSize = (uint64_t)&_KernelEnd - (uint64_t)&_KernelStart;
+	uint64_t kernelPages = kernelSize / 4096 + 1;
+	PageFrameAllocator_LockPages(&_KernelStart, kernelPages);
 
-	textRenderer.Color = 0xFF00FF00;
-	TextRenderer_PutString(&textRenderer, "Free Memory Size: ");
-	textRenderer.Color = 0xFFFF00FF;
-	TextRenderer_PutUInt(&textRenderer, PageFrameAllocator_GetFreeMemory() / 1024);
-	TextRenderer_PutString(&textRenderer, " KB");
-	TextRenderer_PutString(&textRenderer, "\r\n");
-
-	textRenderer.Color = 0xFF00FF00;
-	TextRenderer_PutString(&textRenderer, "Used Memory Size: ");
-	textRenderer.Color = 0xFFFF00FF;
-	TextRenderer_PutUInt(&textRenderer, PageFrameAllocator_GetUsedMemory() / 1024);
-	TextRenderer_PutString(&textRenderer, " KB");
-	TextRenderer_PutString(&textRenderer, "\r\n");
-
-	textRenderer.Color = 0xFF00FF00;
-	TextRenderer_PutString(&textRenderer, "Reserved Memory Size: ");
-	textRenderer.Color = 0xFFFF00FF;
-	TextRenderer_PutUInt(&textRenderer, PageFrameAllocator_GetReservedMemory() / 1024);
-	TextRenderer_PutString(&textRenderer, " KB");
-	TextRenderer_PutString(&textRenderer, "\r\n");
+	PrintMemoryUsage(&textRenderer);
 
 	while (1);
 }
