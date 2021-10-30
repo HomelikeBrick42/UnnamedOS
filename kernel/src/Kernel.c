@@ -5,6 +5,7 @@
 #include "Memory.h"
 #include "Bitmap.h"
 #include "PageFrameAllocator.h"
+#include "Paging.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -59,6 +60,22 @@ void _start(BootInfo* bootInfo) {
 	uint64_t kernelSize = (uint64_t)&_KernelEnd - (uint64_t)&_KernelStart;
 	uint64_t kernelPages = kernelSize / 4096 + 1;
 	PageFrameAllocator_LockPages(&_KernelStart, kernelPages);
+
+	PageTable* PML4 = (PageTable*)PageFrameAllocator_RequestPage();
+	SetMemory(PML4, 0, 4096);
+
+	for (uint64_t i = 0; i < PageFrameAllocator_GetMemorySize(); i += 4096) {
+		MapMemory(PML4, (void*)i, (void*)i);
+	}
+
+	uint64_t framebufferBase = (uint64_t)bootInfo->Framebuffer->BaseAddress;
+	uint64_t framebufferSize = (uint64_t)bootInfo->Framebuffer->BufferSize + 4096;
+
+	for (uint64_t i = framebufferBase; i < framebufferBase + framebufferSize; i += 4096) {
+		MapMemory(PML4, (void*)i, (void*)i);
+	}
+
+	asm ("mov %0, %%cr3" : : "r" (PML4));
 
 	PrintMemoryUsage(&textRenderer);
 
