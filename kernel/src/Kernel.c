@@ -9,6 +9,7 @@
 #include "GDT.h"
 #include "IDT.h"
 #include "Interupts.h"
+#include "IO.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -107,7 +108,19 @@ static void SetupInterupts(void) {
 	interuptGeneralProtectionFault->Type_Attributes = IDT_TA_InteruptGate;
 	interuptGeneralProtectionFault->Selector = 0x08;
 
-	asm ("lidt %0" : : "m" (GlobalIDTR));
+	IDTDescriptorEntry* interuptKeyboard = (IDTDescriptorEntry*)(GlobalIDTR.Offset + 0x21 * sizeof(IDTDescriptorEntry));
+	IDTDescriptorEntry_SetOffset(interuptKeyboard, (uint64_t)KeyboardInt_Handler);
+	interuptKeyboard->Type_Attributes = IDT_TA_InteruptGate;
+	interuptKeyboard->Selector = 0x08;
+
+	asm volatile ("lidt %0" : : "m" (GlobalIDTR));
+
+	PIC_Remap();
+
+	outb(PIC1_DATA, 0b11111101);
+	outb(PIC2_DATA, 0b11111111);
+
+	asm volatile ("sti");
 }
 
 void _start(BootInfo* bootInfo) {

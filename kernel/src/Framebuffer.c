@@ -17,9 +17,6 @@ void ClearScreen(Framebuffer* framebuffer, uint32_t color) {
 		for (uint32_t x = 0; x < framebuffer->Width; x++) {
 			line[x] = color;
 		}
-		for (uint32_t x = 0; x < framebuffer->PixelsPerScanLine - framebuffer->Width; x++) {
-			line[x] = 0x00000000;
-		}
 		line += framebuffer->PixelsPerScanLine;
 	}
 }
