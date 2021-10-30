@@ -126,8 +126,11 @@ static void SetupInterupts(void) {
 void _start(BootInfo* bootInfo) {
 	GlobalFramebuffer = bootInfo->Framebuffer;
 
-	TextRenderer textRenderer; //                                                       A R G B
-	TextRenderer_Create(&textRenderer, GlobalFramebuffer, bootInfo->Font, 10, 20, 0xFF00FF00);
+	//                           A R G B
+	uint32_t backgroundColor = 0xFF224488;
+
+	TextRenderer textRenderer;
+	TextRenderer_Create(&textRenderer, GlobalFramebuffer, bootInfo->Font, 10, 20, backgroundColor, 0xFF00FF00);
 
 	GlobalTextRenderer = &textRenderer;
 
@@ -135,11 +138,13 @@ void _start(BootInfo* bootInfo) {
 		return;
 	}
 
-	ClearScreen(GlobalFramebuffer, 0xFF224488);
+	ClearScreen(GlobalFramebuffer, backgroundColor);
 
 	SetupInterupts();
 
 	PrintMemoryUsage();
 
-	while (1);
+	while (1) {
+		asm volatile ("hlt");
+	}
 }

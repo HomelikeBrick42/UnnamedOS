@@ -2,30 +2,30 @@
 #include "TextRenderer.h"
 #include "IO.h"
 
-__attribute__((interupt)) void PageFault_Handler(InteruptFrame* interuptFrame) {
+__attribute__((interrupt)) void PageFault_Handler(InteruptFrame* interuptFrame) {
 	GlobalTextRenderer->Color = 0xFFFF0000;
 	TextRenderer_PutString(GlobalTextRenderer, "Page fault detected\r\n");
 	while (1);
 }
 
-__attribute__((interupt)) void DoubleFault_Handler(InteruptFrame* interuptFrame) {
+__attribute__((interrupt)) void DoubleFault_Handler(InteruptFrame* interuptFrame) {
 	GlobalTextRenderer->Color = 0xFFFF0000;
 	TextRenderer_PutString(GlobalTextRenderer, "Double fault detected\r\n");
 	while (1);
 }
 
-__attribute__((interupt)) void GeneralProtectionFault_Handler(InteruptFrame* interuptFrame) {
+__attribute__((interrupt)) void GeneralProtectionFault_Handler(InteruptFrame* interuptFrame) {
 	GlobalTextRenderer->Color = 0xFFFF0000;
 	TextRenderer_PutString(GlobalTextRenderer, "General Protection fault detected\r\n");
 	while (1);
 }
 
-__attribute__((interupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame) {
+__attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame) {
 	GlobalTextRenderer->Color = 0xFF00FF00;
 	TextRenderer_PutString(GlobalTextRenderer, "Key pressed: ");
 	uint8_t scancode = inb(0x60);
 	TextRenderer_PutUInt(GlobalTextRenderer, scancode);
-	TextRenderer_PutString(GlobalTextRenderer, "\r\n");
+	TextRenderer_PutString(GlobalTextRenderer, "                             \r");
 	PIC_EndMaster();
 }
 

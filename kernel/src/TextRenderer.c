@@ -2,13 +2,14 @@
 
 TextRenderer* GlobalTextRenderer = NULL;
 
-void TextRenderer_Create(TextRenderer* renderer, Framebuffer* framebuffer, PSF1_Font* font, uint32_t cursorX, uint32_t cursorY, uint32_t color) {
+void TextRenderer_Create(TextRenderer* renderer, Framebuffer* framebuffer, PSF1_Font* font, uint32_t cursorX, uint32_t cursorY, uint32_t backgroundColor, uint32_t color) {
 	*renderer = (TextRenderer){
 		.Framebuffer = framebuffer,
 		.Font = font,
 		.BaseCursorX = cursorX,
 		.CursorX = cursorX,
 		.CursorY = cursorY,
+		.BackgroundColor = backgroundColor,
 		.Color = color,
 	};
 }
@@ -19,6 +20,8 @@ void TextRenderer_PutChar(TextRenderer* renderer, char character) {
 		for (uint32_t xOff = 0; xOff < 8; xOff++) {
 			if ((*fontPtr) & (0b10000000 >> xOff)) {
 				PutPixel(renderer->Framebuffer, renderer->CursorX + xOff, renderer->CursorY + yOff, renderer->Color);
+			} else {
+				PutPixel(renderer->Framebuffer, renderer->CursorX + xOff, renderer->CursorY + yOff, renderer->BackgroundColor);
 			}
 		}
 		fontPtr++;
