@@ -72,10 +72,11 @@ uint64_t PageFrameAllocator_GetReservedMemory(void) {
 	return ReservedMemory;
 }
 
+static uint64_t PageBitmapIndex = 0;
 void* PageFrameAllocator_RequestPage(void) {
-	for (uint64_t i = 0; i < PageBitmap.Size; i++) {
-		if (!Bitmap_GetBit(&PageBitmap, i)) {
-			void* address = (void*)(i * 4096);
+	for (; PageBitmapIndex < PageBitmap.Size; PageBitmapIndex++) {
+		if (!Bitmap_GetBit(&PageBitmap, PageBitmapIndex)) {
+			void* address = (void*)(PageBitmapIndex * 4096);
 			PageFrameAllocator_LockPage(address);
 			return address;
 		}
@@ -100,6 +101,9 @@ void PageFrameAllocator_FreePage(void* address) {
 		return;
 	}
 	if (Bitmap_SetBit(&PageBitmap, index, 0)) {
+		if (index < PageBitmapIndex) {
+			PageBitmapIndex = index;
+		}
 		FreeMemory += 4096;
 		UsedMemory -= 4096;
 	}
@@ -134,6 +138,9 @@ static void UnreservePage(void* address) {
 		return;
 	}
 	if (Bitmap_SetBit(&PageBitmap, index, 0)) {
+		if (index < PageBitmapIndex) {
+			PageBitmapIndex = index;
+		}
 		FreeMemory += 4096;
 		ReservedMemory -= 4096;
 	}
