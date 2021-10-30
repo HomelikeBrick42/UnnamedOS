@@ -15,6 +15,10 @@ PageTableIndex GetPageTableIndex(uint64_t virtualAddress) {
 	return index;
 }
 
+void SetPageTable(PageTable* PML4) {
+	asm ("mov %0, %%cr3" : : "r" (PML4));
+}
+
 void MapMemory(PageTable* PML4, void* virtualAddress, void* physicalAddress) {
 	PageTableIndex index = GetPageTableIndex((uint64_t)virtualAddress);
 	PageDirectoryEntry pde;

@@ -6,6 +6,7 @@
 #include "Bitmap.h"
 #include "PageFrameAllocator.h"
 #include "Paging.h"
+#include "GDT.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -48,6 +49,11 @@ static void PrintMemoryUsage(TextRenderer* textRenderer) {
 }
 
 static uint8_t SetupPagesAndMemoryMapping(BootInfo* bootInfo, TextRenderer* textRenderer) {
+	GDTDescriptor gdtDescriptor = {};
+	gdtDescriptor.Size = sizeof(GDT) - 1;
+	gdtDescriptor.Offset = (uint64_t)&DefaultGDT;
+	LoadGDT(&gdtDescriptor);
+
 	if (!PageFrameAllocator_Init(bootInfo->MemoryMapDescriptors, bootInfo->MemoryMapSize, bootInfo->MemoryMapDescriptorSize)) {
 		textRenderer->Color = 0xFFFF0000;
 		TextRenderer_PutString(textRenderer, "Failed to iniialize PageFrameAllocator\r\n");
@@ -74,7 +80,7 @@ static uint8_t SetupPagesAndMemoryMapping(BootInfo* bootInfo, TextRenderer* text
 		MapMemory(PML4, (void*)i, (void*)i);
 	}
 
-	asm ("mov %0, %%cr3" : : "r" (PML4));
+	SetPageTable(PML4);
 
 	SetMemory(bootInfo->Framebuffer->BaseAddress, 0, bootInfo->Framebuffer->BufferSize);
 
