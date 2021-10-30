@@ -7,7 +7,7 @@ CC = gcc
 ASMC = nasm
 LD = ld
 
-CFLAGS = -ffreestanding -fshort-wchar
+CFLAGS = -ffreestanding -fshort-wchar -I./src
 ASMFLAGS = 
 LDFLAGS = -T $(LDS) -static -Bsymbolic -nostdlib
 
@@ -26,10 +26,10 @@ DIRS = $(wildcard $(SRCDIR)/*)
 
 kernel: $(OBJS) link
 
-$(OBJDIR)/Interupts.o: $(SRCDIR)/Interupts.c
+$(OBJDIR)/Interrupts/Interrupts.o: $(SRCDIR)/Interrupts/Interrupts.c
 	@echo !==== COMPILING $^
 	@mkdir -p $(@D)
-	$(CC) -mno-red-zone -mgeneral-regs-only -ffreestanding -c $^ -o $@
+	$(CC) $(CFLAGS) -mno-red-zone -mgeneral-regs-only -c $^ -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@echo !==== COMPILING $^
