@@ -7,6 +7,8 @@
 #include "PageFrameAllocator.h"
 #include "Paging.h"
 #include "GDT.h"
+#include "IDT.h"
+#include "Interupts.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -22,41 +24,41 @@ typedef struct BootInfo {
 extern uint64_t _KernelStart;
 extern uint64_t _KernelEnd;
 
-static void PrintMemoryUsage(TextRenderer* textRenderer) {
-	textRenderer->Color = 0xFF00FF00;
-	TextRenderer_PutString(textRenderer, "Total Memory Size: ");
-	textRenderer->Color = 0xFFFF00FF;
-	TextRenderer_PutUInt(textRenderer, PageFrameAllocator_GetMemorySize() / 1024);
-	TextRenderer_PutString(textRenderer, " KB\r\n");
+static void PrintMemoryUsage(void) {
+	GlobalTextRenderer->Color = 0xFF00FF00;
+	TextRenderer_PutString(GlobalTextRenderer, "Total Memory Size: ");
+	GlobalTextRenderer->Color = 0xFFFF00FF;
+	TextRenderer_PutUInt(GlobalTextRenderer, PageFrameAllocator_GetMemorySize() / 1024);
+	TextRenderer_PutString(GlobalTextRenderer, " KB\r\n");
 
-	textRenderer->Color = 0xFF00FF00;
-	TextRenderer_PutString(textRenderer, "Free Memory Size: ");
-	textRenderer->Color = 0xFFFF00FF;
-	TextRenderer_PutUInt(textRenderer, PageFrameAllocator_GetFreeMemory() / 1024);
-	TextRenderer_PutString(textRenderer, " KB\r\n");
+	GlobalTextRenderer->Color = 0xFF00FF00;
+	TextRenderer_PutString(GlobalTextRenderer, "Free Memory Size: ");
+	GlobalTextRenderer->Color = 0xFFFF00FF;
+	TextRenderer_PutUInt(GlobalTextRenderer, PageFrameAllocator_GetFreeMemory() / 1024);
+	TextRenderer_PutString(GlobalTextRenderer, " KB\r\n");
 
-	textRenderer->Color = 0xFF00FF00;
-	TextRenderer_PutString(textRenderer, "Used Memory Size: ");
-	textRenderer->Color = 0xFFFF00FF;
-	TextRenderer_PutUInt(textRenderer, PageFrameAllocator_GetUsedMemory() / 1024);
-	TextRenderer_PutString(textRenderer, " KB\r\n");
+	GlobalTextRenderer->Color = 0xFF00FF00;
+	TextRenderer_PutString(GlobalTextRenderer, "Used Memory Size: ");
+	GlobalTextRenderer->Color = 0xFFFF00FF;
+	TextRenderer_PutUInt(GlobalTextRenderer, PageFrameAllocator_GetUsedMemory() / 1024);
+	TextRenderer_PutString(GlobalTextRenderer, " KB\r\n");
 
-	textRenderer->Color = 0xFF00FF00;
-	TextRenderer_PutString(textRenderer, "Reserved Memory Size: ");
-	textRenderer->Color = 0xFFFF00FF;
-	TextRenderer_PutUInt(textRenderer, PageFrameAllocator_GetReservedMemory() / 1024);
-	TextRenderer_PutString(textRenderer, " KB\r\n");
+	GlobalTextRenderer->Color = 0xFF00FF00;
+	TextRenderer_PutString(GlobalTextRenderer, "Reserved Memory Size: ");
+	GlobalTextRenderer->Color = 0xFFFF00FF;
+	TextRenderer_PutUInt(GlobalTextRenderer, PageFrameAllocator_GetReservedMemory() / 1024);
+	TextRenderer_PutString(GlobalTextRenderer, " KB\r\n");
 }
 
-static uint8_t SetupPagesAndMemoryMapping(BootInfo* bootInfo, TextRenderer* textRenderer) {
+static uint8_t SetupPagesAndMemoryMapping(BootInfo* bootInfo) {
 	GDTDescriptor gdtDescriptor = {};
 	gdtDescriptor.Size = sizeof(GDT) - 1;
 	gdtDescriptor.Offset = (uint64_t)&DefaultGDT;
 	LoadGDT(&gdtDescriptor);
 
 	if (!PageFrameAllocator_Init(bootInfo->MemoryMapDescriptors, bootInfo->MemoryMapSize, bootInfo->MemoryMapDescriptorSize)) {
-		textRenderer->Color = 0xFFFF0000;
-		TextRenderer_PutString(textRenderer, "Failed to iniialize PageFrameAllocator\r\n");
+		GlobalTextRenderer->Color = 0xFFFF0000;
+		TextRenderer_PutString(GlobalTextRenderer, "Failed to iniialize PageFrameAllocator\r\n");
 		return 0;
 	}
 
@@ -82,20 +84,49 @@ static uint8_t SetupPagesAndMemoryMapping(BootInfo* bootInfo, TextRenderer* text
 
 	SetPageTable(PML4);
 
-	SetMemory(bootInfo->Framebuffer->BaseAddress, 0, bootInfo->Framebuffer->BufferSize);
-
 	return 1;
 }
 
-void _start(BootInfo* bootInfo) {
-	TextRenderer textRenderer; //                                                       A R G B
-	TextRenderer_Create(&textRenderer, bootInfo->Framebuffer, bootInfo->Font, 10, 20, 0xFF00FF00);
+static IDTR GlobalIDTR;
+static void SetupInterupts(void) {
+	GlobalIDTR.Limit = 0x0FFF;
+	GlobalIDTR.Offset = (uint64_t)PageFrameAllocator_RequestPage();
 
-	if (!SetupPagesAndMemoryMapping(bootInfo, &textRenderer)) {
+	IDTDescriptorEntry* interuptPageFault = (IDTDescriptorEntry*)(GlobalIDTR.Offset + 0x0E * sizeof(IDTDescriptorEntry));
+	IDTDescriptorEntry_SetOffset(interuptPageFault, (uint64_t)PageFault_Handler);
+	interuptPageFault->Type_Attributes = IDT_TA_InteruptGate;
+	interuptPageFault->Selector = 0x08;
+
+	IDTDescriptorEntry* interuptDoubleFault = (IDTDescriptorEntry*)(GlobalIDTR.Offset + 0x08 * sizeof(IDTDescriptorEntry));
+	IDTDescriptorEntry_SetOffset(interuptDoubleFault, (uint64_t)DoubleFault_Handler);
+	interuptDoubleFault->Type_Attributes = IDT_TA_InteruptGate;
+	interuptDoubleFault->Selector = 0x08;
+
+	IDTDescriptorEntry* interuptGeneralProtectionFault = (IDTDescriptorEntry*)(GlobalIDTR.Offset + 0x0D * sizeof(IDTDescriptorEntry));
+	IDTDescriptorEntry_SetOffset(interuptGeneralProtectionFault, (uint64_t)GeneralProtectionFault_Handler);
+	interuptGeneralProtectionFault->Type_Attributes = IDT_TA_InteruptGate;
+	interuptGeneralProtectionFault->Selector = 0x08;
+
+	asm ("lidt %0" : : "m" (GlobalIDTR));
+}
+
+void _start(BootInfo* bootInfo) {
+	GlobalFramebuffer = bootInfo->Framebuffer;
+
+	TextRenderer textRenderer; //                                                       A R G B
+	TextRenderer_Create(&textRenderer, GlobalFramebuffer, bootInfo->Font, 10, 20, 0xFF00FF00);
+
+	GlobalTextRenderer = &textRenderer;
+
+	if (!SetupPagesAndMemoryMapping(bootInfo)) {
 		return;
 	}
 
-	PrintMemoryUsage(&textRenderer);
+	ClearScreen(GlobalFramebuffer, 0xFF224488);
+
+	SetupInterupts();
+
+	PrintMemoryUsage();
 
 	while (1);
 }

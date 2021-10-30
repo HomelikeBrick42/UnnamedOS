@@ -1,4 +1,3 @@
-
 OSNAME = UnnamedOS
 
 GNUEFI = ../gnu-efi
@@ -26,6 +25,11 @@ OBJS += $(patsubst $(SRCDIR)/%.asm, $(OBJDIR)/%_asm.o, $(ASMSRC))
 DIRS = $(wildcard $(SRCDIR)/*)
 
 kernel: $(OBJS) link
+
+$(OBJDIR)/Interupts.o: $(SRCDIR)/Interupts.c
+	@echo !==== COMPILING $^
+	@mkdir -p $(@D)
+	$(CC) -mno-red-zone -mgeneral-regs-only -ffreestanding -c $^ -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@echo !==== COMPILING $^

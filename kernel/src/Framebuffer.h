@@ -13,3 +13,6 @@ typedef struct Framebuffer {
 } Framebuffer;
 
 void PutPixel(Framebuffer* framebuffer, uint32_t x, uint32_t y, uint32_t color);
+void ClearScreen(Framebuffer* framebuffer, uint32_t color);
+
+extern Framebuffer* GlobalFramebuffer;

@@ -1,5 +1,7 @@
 #include "TextRenderer.h"
 
+TextRenderer* GlobalTextRenderer = NULL;
+
 void TextRenderer_Create(TextRenderer* renderer, Framebuffer* framebuffer, PSF1_Font* font, uint32_t cursorX, uint32_t cursorY, uint32_t color) {
 	*renderer = (TextRenderer){
 		.Framebuffer = framebuffer,
