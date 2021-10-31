@@ -10,6 +10,7 @@ typedef struct TextRenderer {
 	Framebuffer* Framebuffer;
 	PSF1_Font* Font;
 	uint32_t BaseCursorX;
+	uint32_t BaseCursorY;
 	uint32_t CursorX;
 	uint32_t CursorY;
 	uint32_t BackgroundColor;

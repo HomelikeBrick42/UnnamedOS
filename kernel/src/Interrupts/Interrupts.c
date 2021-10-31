@@ -1,6 +1,7 @@
 #include "Interrupts.h"
 
 #include "Graphics/TextRenderer.h"
+#include "IO/Keyboard.h"
 #include "IO/IO.h"
 
 __attribute__((interrupt)) void PageFault_Handler(InteruptFrame* interuptFrame) {
@@ -22,11 +23,117 @@ __attribute__((interrupt)) void GeneralProtectionFault_Handler(InteruptFrame* in
 }
 
 __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame) {
-	GlobalTextRenderer->Color = 0xFF00FF00;
-	TextRenderer_PutString(GlobalTextRenderer, "Key pressed: ");
 	uint8_t scancode = inb(0x60);
-	TextRenderer_PutUInt(GlobalTextRenderer, scancode);
-	TextRenderer_PutString(GlobalTextRenderer, "                             \r");
+
+	static uint8_t CapslockOn = 0;
+	static uint8_t ShiftPressed = 0;
+	static uint8_t CtrlPressed = 0;
+
+	static uint8_t PrintCharacters = 0;
+
+	static uint8_t LastScancode = 0;
+
+	if (scancode == 1) {
+		PrintCharacters = !PrintCharacters;
+	}
+
+	if (PrintCharacters) {
+		uint32_t oldColor = GlobalTextRenderer->Color;
+		GlobalTextRenderer->Color = scancode <= 127 ? 0xFFFF0000 : 0xFF550000;
+		TextRenderer_PutUInt(GlobalTextRenderer, scancode);
+		TextRenderer_PutString(GlobalTextRenderer, "\r\n");
+		GlobalTextRenderer->Color = oldColor;
+	} else {
+		switch (scancode) {
+			case 14: {
+				// TODO: Find a better way to do this
+				GlobalTextRenderer->CursorX -= 8;
+				TextRenderer_PutChar(GlobalTextRenderer, ' ');
+				GlobalTextRenderer->CursorX -= 8;
+			} break;
+
+			case 28: {
+				TextRenderer_PutString(GlobalTextRenderer, "\r\n");
+			} break;
+
+			case 29: {
+				CtrlPressed = 1;
+			} break;
+
+			case 42: {
+				ShiftPressed = 1;
+			} break;
+
+			case 58: {
+				CapslockOn = !CapslockOn;
+			} break;
+
+			case 72: {
+				if (LastScancode == 224) {
+					GlobalTextRenderer->CursorY -= GlobalTextRenderer->Font->Header->CharSize;
+				}
+			} break;
+
+			case 80: {
+				if (LastScancode == 224) {
+					GlobalTextRenderer->CursorY += GlobalTextRenderer->Font->Header->CharSize;
+				}
+			} break;
+
+			case 75: {
+				if (LastScancode == 224) {
+					GlobalTextRenderer->CursorX -= 8;
+				}
+			} break;
+
+			case 77: {
+				if (LastScancode == 224) {
+					GlobalTextRenderer->CursorX += 8;
+				}
+			} break;
+
+			case 157: {
+				CtrlPressed = 0;
+			} break;
+
+			case 170: {
+				ShiftPressed = 0;
+			} break;
+
+			case 224: {
+			} break;
+
+			default: {
+				const char* table =
+					ShiftPressed ^ CapslockOn
+					? US_QWERTY_ASCII_Uppercase_Table
+					: US_QWERTY_ASCII_Lowercase_Table;
+
+				char character = table[scancode];
+				switch (character) {
+					case 0: {
+					} break;
+
+					case 'c': {
+						if (CtrlPressed) {
+							ClearScreen(GlobalFramebuffer, 0xFF224488);
+							GlobalTextRenderer->CursorX = GlobalTextRenderer->BaseCursorX;
+							GlobalTextRenderer->CursorY = GlobalTextRenderer->BaseCursorY;
+						} else {
+							goto Default;
+						}
+					} break;
+
+					default: Default: {
+						TextRenderer_PutChar(GlobalTextRenderer, character);
+					} break;
+				}
+			} break;
+		}
+	}
+
+	LastScancode = scancode;
+
 	PIC_EndMaster();
 }
 

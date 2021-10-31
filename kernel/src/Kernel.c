@@ -143,6 +143,8 @@ void _start(BootInfo* bootInfo) {
 	SetupInterupts();
 
 	PrintMemoryUsage();
+	
+	GlobalTextRenderer->Color = 0xFF00FF00;
 
 	while (1) {
 		asm volatile ("hlt");

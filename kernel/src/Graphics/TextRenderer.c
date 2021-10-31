@@ -7,6 +7,7 @@ void TextRenderer_Create(TextRenderer* renderer, Framebuffer* framebuffer, PSF1_
 		.Framebuffer = framebuffer,
 		.Font = font,
 		.BaseCursorX = cursorX,
+		.BaseCursorY = cursorY,
 		.CursorX = cursorX,
 		.CursorY = cursorY,
 		.BackgroundColor = backgroundColor,
