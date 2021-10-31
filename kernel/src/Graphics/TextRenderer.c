@@ -31,6 +31,10 @@ void TextRenderer_PutChar(TextRenderer* renderer, char character) {
 }
 
 void TextRenderer_PutString(TextRenderer* renderer, const char* string) {
+	if (!string) {
+		return;
+	}
+
 	while (*string) {
 		switch (*string) {
 			case '\n': {

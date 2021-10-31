@@ -172,3 +172,7 @@ typedef enum PS2Scancode {
 	PS2Scancode_Released_F11                = 0xD7,
 	PS2Scancode_Released_F12                = 0xD8,
 } PS2Scancode;
+
+extern const char* PS2Scancode_Names[];
+extern const char PS2Scancode_LowercaseASCII[];
+extern const char PS2Scancode_UppercaseASCII[];
