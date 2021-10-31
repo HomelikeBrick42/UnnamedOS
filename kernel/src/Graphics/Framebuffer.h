@@ -1,7 +1,6 @@
 #pragma once
 
-#include <stdint.h>
-#include <stddef.h>
+#include "Common.h"
 
 // TODO: Include the pixel format in this struct
 typedef struct Framebuffer {

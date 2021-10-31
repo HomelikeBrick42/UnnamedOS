@@ -1,3 +1,4 @@
+#include "Common.h"
 #include "Graphics/Framebuffer.h"
 #include "Graphics/PSF1_Font.h"
 #include "Graphics/TextRenderer.h"
@@ -10,9 +11,6 @@
 #include "Interrupts/IDT.h"
 #include "Interrupts/Interrupts.h"
 #include "IO/IO.h"
-
-#include <stdint.h>
-#include <stddef.h>
 
 typedef struct BootInfo {
 	Framebuffer* Framebuffer;
@@ -51,7 +49,7 @@ static void PrintMemoryUsage(void) {
 	TextRenderer_PutString(GlobalTextRenderer, " KB\r\n");
 }
 
-static uint8_t SetupPagesAndMemoryMapping(BootInfo* bootInfo) {
+static bool SetupPagesAndMemoryMapping(BootInfo* bootInfo) {
 	GDTDescriptor gdtDescriptor = {};
 	gdtDescriptor.Size = sizeof(GDT) - 1;
 	gdtDescriptor.Offset = (uint64_t)&DefaultGDT;
@@ -60,7 +58,7 @@ static uint8_t SetupPagesAndMemoryMapping(BootInfo* bootInfo) {
 	if (!PageFrameAllocator_Init(bootInfo->MemoryMapDescriptors, bootInfo->MemoryMapSize, bootInfo->MemoryMapDescriptorSize)) {
 		GlobalTextRenderer->Color = 0xFFFF0000;
 		TextRenderer_PutString(GlobalTextRenderer, "Failed to iniialize PageFrameAllocator\r\n");
-		return 0;
+		return false;
 	}
 
 	uint64_t kernelSize = (uint64_t)&_KernelEnd - (uint64_t)&_KernelStart;
@@ -85,7 +83,7 @@ static uint8_t SetupPagesAndMemoryMapping(BootInfo* bootInfo) {
 
 	SetPageTable(PML4);
 
-	return 1;
+	return true;
 }
 
 static IDTR GlobalIDTR;
@@ -146,7 +144,7 @@ void _start(BootInfo* bootInfo) {
 	
 	GlobalTextRenderer->Color = 0xFF00FF00;
 
-	while (1) {
+	while (true) {
 		asm volatile ("hlt");
 	}
 }

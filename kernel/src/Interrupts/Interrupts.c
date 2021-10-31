@@ -7,58 +7,56 @@
 __attribute__((interrupt)) void PageFault_Handler(InteruptFrame* interuptFrame) {
 	GlobalTextRenderer->Color = 0xFFFF0000;
 	TextRenderer_PutString(GlobalTextRenderer, "Page fault detected\r\n");
-	while (1);
+	while (true);
 }
 
 __attribute__((interrupt)) void DoubleFault_Handler(InteruptFrame* interuptFrame) {
 	GlobalTextRenderer->Color = 0xFFFF0000;
 	TextRenderer_PutString(GlobalTextRenderer, "Double fault detected\r\n");
-	while (1);
+	while (true);
 }
 
 __attribute__((interrupt)) void GeneralProtectionFault_Handler(InteruptFrame* interuptFrame) {
 	GlobalTextRenderer->Color = 0xFFFF0000;
 	TextRenderer_PutString(GlobalTextRenderer, "General Protection fault detected\r\n");
-	while (1);
+	while (true);
 }
 
 __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame) {
 	uint8_t scancode = inb(0x60);
 
-	static uint8_t CapslockOn = 0;
-	static uint8_t ShiftPressed = 0;
+	static bool CapslockOn = false;
+	static bool ShiftPressed = false;
 
-	char character = (ShiftPressed ^ CapslockOn
-		? PS2Scancode_UppercaseASCII
-		: PS2Scancode_LowercaseASCII
-		)[scancode];
+	switch (scancode) {
+		case PS2Scancode_Pressed_Backspace: {
+			// Find a better way to do this
+			GlobalTextRenderer->CursorX -= 8;
+			TextRenderer_PutChar(GlobalTextRenderer, ' ');
+			GlobalTextRenderer->CursorX -= 8;
+		} break;
 
-	if (character) {
-		TextRenderer_PutChar(GlobalTextRenderer, character);
-	} else {
-		switch (scancode) {
-			case PS2Scancode_Pressed_Backspace: {
-				// Find a better way to do this
-				GlobalTextRenderer->CursorX -= 8;
-				TextRenderer_PutChar(GlobalTextRenderer, ' ');
-				GlobalTextRenderer->CursorX -= 8;
-			} break;
+		case PS2Scancode_Pressed_Enter: {
+			TextRenderer_PutString(GlobalTextRenderer, "\r\n");
+		} break;
 
-			case PS2Scancode_Pressed_Enter: {
-				TextRenderer_PutString(GlobalTextRenderer, "\r\n");
-			} break;
+		case PS2Scancode_Pressed_LeftShift: {
+			ShiftPressed = true;
+		} break;
 
-			case PS2Scancode_Pressed_LeftShift: {
-				ShiftPressed = 1;
-			} break;
+		case PS2Scancode_Released_LeftShift: {
+			ShiftPressed = false;
+		} break;
 
-			case PS2Scancode_Released_LeftShift: {
-				ShiftPressed = 0;
-			} break;
-
-			default: {
-			} break;
-		}
+		default: {
+			char character = (ShiftPressed ^ CapslockOn
+				? PS2Scancode_UppercaseASCII
+				: PS2Scancode_LowercaseASCII
+				)[scancode];
+			if (character) {
+				TextRenderer_PutChar(GlobalTextRenderer, character);
+			}
+		} break;
 	}
 
 	PIC_EndMaster();

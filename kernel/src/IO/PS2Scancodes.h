@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Common.h"
+
 typedef enum PS2Scancode {
 	PS2Scancode_Pressed_Escape              = 0x01,
 	PS2Scancode_Pressed_1                   = 0x02,

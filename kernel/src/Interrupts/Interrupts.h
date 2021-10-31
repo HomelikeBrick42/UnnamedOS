@@ -1,7 +1,6 @@
 #pragma once
 
-#include <stdint.h>
-#include <stddef.h>
+#include "Common.h"
 
 #define PIC1_COMMAND 0x20
 #define PIC1_DATA    0x21

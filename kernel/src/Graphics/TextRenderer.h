@@ -1,10 +1,9 @@
 #pragma once
 
+#include "Common.h"
+
 #include "Graphics/Framebuffer.h"
 #include "Graphics/PSF1_Font.h"
-
-#include <stdint.h>
-#include <stddef.h>
 
 typedef struct TextRenderer {
 	Framebuffer* Framebuffer;

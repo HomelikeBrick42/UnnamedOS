@@ -1,7 +1,6 @@
 #pragma once
 
-#include <stdint.h>
-#include <stddef.h>
+#include "Common.h"
 
 #define IDT_TA_InteruptGate 0b10001110
 #define IDT_TA_CallGate     0b10001100
