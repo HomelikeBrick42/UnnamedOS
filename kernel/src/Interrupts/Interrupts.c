@@ -30,7 +30,7 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 
 	switch (scancode) {
 		case PS2Scancode_Pressed_Backspace: {
-			// Find a better way to do this
+			// TODO: Find a better way to do this
 			GlobalTextRenderer->CursorX -= 8;
 			TextRenderer_PutChar(GlobalTextRenderer, ' ');
 			GlobalTextRenderer->CursorX -= 8;
@@ -46,6 +46,11 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 
 		case PS2Scancode_Released_LeftShift: {
 			ShiftPressed = false;
+		} break;
+
+		case PS2Scancode_Pressed_CapsLock: {
+			CapslockOn = !CapslockOn;
+			// TODO: Turn the CapsLock LED on
 		} break;
 
 		default: {
