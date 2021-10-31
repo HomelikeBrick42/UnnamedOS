@@ -1,7 +1,6 @@
 #pragma once
 
-#include <stdint.h>
-#include <stddef.h>
+#include "Common.h"
 
 typedef enum EfiMemoryType {
 	EfiMemoryType_ReservedMemory,

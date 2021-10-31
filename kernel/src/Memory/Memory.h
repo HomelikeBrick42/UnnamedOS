@@ -1,8 +1,7 @@
 #pragma once
 
-#include "Memory/EfiMemory.h"
+#include "Common.h"
 
-#include <stdint.h>
-#include <stddef.h>
+#include "Memory/EfiMemory.h"
 
 void SetMemory(void* block, uint8_t value, uint64_t size);

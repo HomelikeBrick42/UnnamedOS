@@ -1,7 +1,6 @@
 #pragma once
 
-#include <stdint.h>
-#include <stddef.h>
+#include "Common.h"
 
 typedef struct Bitmap {
 	void* Buffer;
@@ -9,5 +8,5 @@ typedef struct Bitmap {
 } Bitmap;
 
 void Bitmap_Create(Bitmap* bitmap, void* buffer, size_t size);
-uint8_t Bitmap_GetBit(Bitmap* bitmap, uint64_t index);
-uint8_t Bitmap_SetBit(Bitmap* bitmap, uint64_t index, uint8_t value);
+bool Bitmap_GetBit(Bitmap* bitmap, uint64_t index);
+bool Bitmap_SetBit(Bitmap* bitmap, uint64_t index, bool value);

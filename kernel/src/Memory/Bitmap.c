@@ -7,7 +7,7 @@ void Bitmap_Create(Bitmap* bitmap, void* buffer, size_t size) {
 	};
 }
 
-uint8_t Bitmap_GetBit(Bitmap* bitmap, uint64_t index) {
+bool Bitmap_GetBit(Bitmap* bitmap, uint64_t index) {
 	if (index >= bitmap->Size) {
 		return 0;
 	}
@@ -21,9 +21,9 @@ uint8_t Bitmap_GetBit(Bitmap* bitmap, uint64_t index) {
 	return (byte & bit) != 0;
 }
 
-uint8_t Bitmap_SetBit(Bitmap* bitmap, uint64_t index, uint8_t value) {
+bool Bitmap_SetBit(Bitmap* bitmap, uint64_t index, bool value) {
 	if (index >= bitmap->Size) {
-		return 0;
+		return false;
 	}
 
 	uint64_t byteIndex = index / 8;
@@ -38,5 +38,5 @@ uint8_t Bitmap_SetBit(Bitmap* bitmap, uint64_t index, uint8_t value) {
 		*byte |= bit;
 	}
 
-	return 1;
+	return true;
 }

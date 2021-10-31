@@ -1,9 +1,8 @@
 #pragma once
 
-#include "Memory/EfiMemory.h"
+#include "Common.h"
 
-#include <stdint.h>
-#include <stddef.h>
+#include "Memory/EfiMemory.h"
 
 uint8_t PageFrameAllocator_Init(EfiMemoryDescriptor* memoryMapDescriptors, uint64_t memoryMapSize, uint64_t memoryMapDescriptorSize);
 uint64_t PageFrameAllocator_GetMemorySize(void);

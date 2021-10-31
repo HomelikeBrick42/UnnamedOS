@@ -1,18 +1,17 @@
 #pragma once
 
-#include <stdint.h>
-#include <stddef.h>
+#include "Common.h"
 
 typedef struct PageDirectoryEntry {
-	uint8_t Present : 1;
-	uint8_t ReadWrite : 1;
-	uint8_t UserSuper : 1;
-	uint8_t WriteThrough : 1;
-	uint8_t CacheDisabled : 1;
-	uint8_t Accessed : 1;
-	uint8_t Ignore0 : 1;
-	uint8_t LargerPages : 1;
-	uint8_t Ignore1 : 1;
+	bool Present : 1;
+	bool ReadWrite : 1;
+	bool UserSuper : 1;
+	bool WriteThrough : 1;
+	bool CacheDisabled : 1;
+	bool Accessed : 1;
+	bool Ignore0 : 1;
+	bool LargerPages : 1;
+	bool Ignore1 : 1;
 	uint8_t Available : 3;
 	uint64_t Address : 52;
 } PageDirectoryEntry;
