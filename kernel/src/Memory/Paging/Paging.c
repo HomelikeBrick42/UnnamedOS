@@ -20,7 +20,7 @@ void SetPageTable(PageTable* PML4) {
 	asm ("mov %0, %%cr3" : : "r" (PML4));
 }
 
-void MapMemory(PageTable* PML4, void* virtualAddress, void* physicalAddress) {
+void MapPage(PageTable* PML4, void* virtualAddress, void* physicalAddress) {
 	PageTableIndex index = GetPageTableIndex((uint64_t)virtualAddress);
 	PageDirectoryEntry pde;
 
@@ -68,4 +68,10 @@ void MapMemory(PageTable* PML4, void* virtualAddress, void* physicalAddress) {
 	pde.Present = 1;
 	pde.ReadWrite = 1;
 	pt->Entries[index.P] = pde;
+}
+
+void MapPages(PageTable* PML4, void* virtualAddress, void* physicalAddress, uint64_t pageCount) {
+	for (uint64_t i = 0; i < pageCount; i++) {
+		MapPage(PML4, (char*)virtualAddress + i * 4096, (char*)physicalAddress + i * 4096);
+	}
 }

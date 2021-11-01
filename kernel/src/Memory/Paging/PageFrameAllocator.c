@@ -84,6 +84,28 @@ void* PageFrameAllocator_RequestPage(void) {
 	return NULL;
 }
 
+void* PageFrameAllocator_RequestPages(uint64_t pageCount) {
+	uint64_t startIndex = PageBitmapIndex;
+	uint64_t freePageCount = 0;
+	for (uint64_t i = PageBitmapIndex; i < PageBitmap.Size; i++) {
+		if (!Bitmap_GetBit(&PageBitmap, PageBitmapIndex)) {
+			if (freePageCount == 0) {
+				startIndex = i;
+			}
+			freePageCount++;
+		} else {
+			freePageCount = 0;
+		}
+
+		if (freePageCount >= pageCount) {
+			void* address = (void*)(startIndex * 4096);
+			PageFrameAllocator_LockPages(address, pageCount);
+			return address;
+		}
+	}
+	return NULL;
+}
+
 static uint64_t GetMemorySize(EfiMemoryDescriptor* memoryMapDescriptors, uint64_t memoryMapEntries, uint64_t memoryMapDescriptorSize) {
 	uint64_t MemorySizeBytes = 0;
 

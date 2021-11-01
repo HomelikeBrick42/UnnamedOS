@@ -10,6 +10,7 @@ uint64_t PageFrameAllocator_GetFreeMemory(void);
 uint64_t PageFrameAllocator_GetUsedMemory(void);
 uint64_t PageFrameAllocator_GetReservedMemory(void);
 void* PageFrameAllocator_RequestPage(void);
+void* PageFrameAllocator_RequestPages(uint64_t pageCount);
 void PageFrameAllocator_FreePage(void* address);
 void PageFrameAllocator_FreePages(void* address, uint64_t count);
 void PageFrameAllocator_LockPage(void* address);

@@ -31,4 +31,5 @@ typedef struct PageTableIndex {
 PageTableIndex GetPageTableIndex(uint64_t virtualAddress);
 
 void SetPageTable(PageTable* PML4);
-void MapMemory(PageTable* PML4, void* virtualAddress, void* physicalAddress);
+void MapPage(PageTable* PML4, void* virtualAddress, void* physicalAddress);
+void MapPages(PageTable* PML4, void* virtualAddress, void* physicalAddress, uint64_t pageCount);

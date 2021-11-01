@@ -47,13 +47,8 @@ static bool SetupPagesAndMemoryMapping(BootInfo* bootInfo) {
 	PageTable* PML4 = (PageTable*)PageFrameAllocator_RequestPage();
 	SetMemory(PML4, 0, 4096);
 
-	for (uint64_t i = 0; i < PageFrameAllocator_GetMemorySize(); i += 4096) {
-		MapMemory(PML4, (void*)i, (void*)i);
-	}
-
-	for (uint64_t i = framebufferBase; i < framebufferBase + framebufferSize; i += 4096) {
-		MapMemory(PML4, (void*)i, (void*)i);
-	}
+	MapPages(PML4, 0, 0, PageFrameAllocator_GetMemorySize() / 4096);
+	MapPages(PML4, (void*)framebufferBase, (void*)framebufferBase, framebufferSize / 4096);
 
 	SetPageTable(PML4);
 
