@@ -91,8 +91,6 @@ void _start(BootInfo* bootInfo) {
 		return;
 	}
 
-	Renderer_Clear(0xFF224488);
-
 	SetupInterupts();
 
 	PS2Mouse_Init();
@@ -102,8 +100,12 @@ void _start(BootInfo* bootInfo) {
 
 	asm volatile ("sti");
 
+	Renderer_Clear(0xFF224488);
+
 	while (true) {
 		PS2Mouse_ProcessPacket();
+		Renderer_DrawQuad((uint32_t)MouseX, (uint32_t)MouseY, 10, 10, 0xFFFF0000);
+		Renderer_SwapBuffers();
 		// asm volatile ("hlt");
 	}
 }
