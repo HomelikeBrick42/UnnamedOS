@@ -11,6 +11,7 @@
 #include "Interrupts/IDT.h"
 #include "Interrupts/Interrupts.h"
 #include "IO/IO.h"
+#include "IO/Mouse.h"
 
 typedef struct BootInfo {
 	Framebuffer* Framebuffer;
@@ -87,38 +88,27 @@ static bool SetupPagesAndMemoryMapping(BootInfo* bootInfo) {
 }
 
 static IDTR GlobalIDTR;
+
+static void SetIDTGate(void* handler, uint8_t entryOffset, uint8_t type_attributes, uint8_t selector) {
+	IDTDescriptorEntry* interupt = (IDTDescriptorEntry*)(GlobalIDTR.Offset + entryOffset * sizeof(IDTDescriptorEntry));
+	IDTDescriptorEntry_SetOffset(interupt, (uint64_t)handler);
+	interupt->Type_Attributes = type_attributes;
+	interupt->Selector = selector;
+}
+
 static void SetupInterupts(void) {
 	GlobalIDTR.Limit = 0x0FFF;
 	GlobalIDTR.Offset = (uint64_t)PageFrameAllocator_RequestPage();
 
-	IDTDescriptorEntry* interuptPageFault = (IDTDescriptorEntry*)(GlobalIDTR.Offset + 0x0E * sizeof(IDTDescriptorEntry));
-	IDTDescriptorEntry_SetOffset(interuptPageFault, (uint64_t)PageFault_Handler);
-	interuptPageFault->Type_Attributes = IDT_TA_InteruptGate;
-	interuptPageFault->Selector = 0x08;
-
-	IDTDescriptorEntry* interuptDoubleFault = (IDTDescriptorEntry*)(GlobalIDTR.Offset + 0x08 * sizeof(IDTDescriptorEntry));
-	IDTDescriptorEntry_SetOffset(interuptDoubleFault, (uint64_t)DoubleFault_Handler);
-	interuptDoubleFault->Type_Attributes = IDT_TA_InteruptGate;
-	interuptDoubleFault->Selector = 0x08;
-
-	IDTDescriptorEntry* interuptGeneralProtectionFault = (IDTDescriptorEntry*)(GlobalIDTR.Offset + 0x0D * sizeof(IDTDescriptorEntry));
-	IDTDescriptorEntry_SetOffset(interuptGeneralProtectionFault, (uint64_t)GeneralProtectionFault_Handler);
-	interuptGeneralProtectionFault->Type_Attributes = IDT_TA_InteruptGate;
-	interuptGeneralProtectionFault->Selector = 0x08;
-
-	IDTDescriptorEntry* interuptKeyboard = (IDTDescriptorEntry*)(GlobalIDTR.Offset + 0x21 * sizeof(IDTDescriptorEntry));
-	IDTDescriptorEntry_SetOffset(interuptKeyboard, (uint64_t)KeyboardInt_Handler);
-	interuptKeyboard->Type_Attributes = IDT_TA_InteruptGate;
-	interuptKeyboard->Selector = 0x08;
+	SetIDTGate(PageFault_Handler,              0x0E, IDT_TA_InteruptGate, 0x08);
+	SetIDTGate(DoubleFault_Handler,            0x08, IDT_TA_InteruptGate, 0x08);
+	SetIDTGate(GeneralProtectionFault_Handler, 0x0D, IDT_TA_InteruptGate, 0x08);
+	SetIDTGate(KeyboardInt_Handler,            0x21, IDT_TA_InteruptGate, 0x08);
+	SetIDTGate(MouseInt_Handler,               0x2C, IDT_TA_InteruptGate, 0x08);
 
 	asm volatile ("lidt %0" : : "m" (GlobalIDTR));
 
 	PIC_Remap();
-
-	outb(PIC1_DATA, 0b11111101);
-	outb(PIC2_DATA, 0b11111111);
-
-	asm volatile ("sti");
 }
 
 void _start(BootInfo* bootInfo) {
@@ -136,15 +126,23 @@ void _start(BootInfo* bootInfo) {
 		return;
 	}
 
-	ClearScreen(GlobalFramebuffer, backgroundColor);
+	Framebuffer_ClearScreen(GlobalFramebuffer, backgroundColor);
 
 	SetupInterupts();
+
+	PS2Mouse_Init();
+
+	outb(PIC1_DATA, 0b11111001);
+	outb(PIC2_DATA, 0b11101111);
+
+	asm volatile ("sti");
 
 	PrintMemoryUsage();
 	
 	GlobalTextRenderer->Color = 0xFF00FF00;
 
 	while (true) {
-		asm volatile ("hlt");
+		PS2Mouse_ProcessPacket();
+		// asm volatile ("hlt");
 	}
 }

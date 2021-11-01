@@ -19,6 +19,7 @@ __attribute__((interrupt)) void PageFault_Handler(InteruptFrame* interuptFrame);
 __attribute__((interrupt)) void DoubleFault_Handler(InteruptFrame* interuptFrame);
 __attribute__((interrupt)) void GeneralProtectionFault_Handler(InteruptFrame* interuptFrame);
 __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame);
+__attribute__((interrupt)) void MouseInt_Handler(InteruptFrame* interuptFrame);
 
 void PIC_Remap(void);
 void PIC_EndMaster(void);

@@ -20,9 +20,9 @@ void TextRenderer_PutChar(TextRenderer* renderer, char character) {
 	for (uint32_t yOff = 0; yOff < renderer->Font->Header->CharSize; yOff++) {
 		for (uint32_t xOff = 0; xOff < 8; xOff++) {
 			if ((*fontPtr) & (0b10000000 >> xOff)) {
-				PutPixel(renderer->Framebuffer, renderer->CursorX + xOff, renderer->CursorY + yOff, renderer->Color);
+				Framebuffer_PutPixel(renderer->Framebuffer, renderer->CursorX + xOff, renderer->CursorY + yOff, renderer->Color);
 			} else {
-				PutPixel(renderer->Framebuffer, renderer->CursorX + xOff, renderer->CursorY + yOff, renderer->BackgroundColor);
+				Framebuffer_PutPixel(renderer->Framebuffer, renderer->CursorX + xOff, renderer->CursorY + yOff, renderer->BackgroundColor);
 			}
 		}
 		fontPtr++;

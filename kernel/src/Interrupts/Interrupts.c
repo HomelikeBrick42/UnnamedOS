@@ -4,6 +4,7 @@
 #include "Memory/Memory.h"
 #include "IO/PS2Scancodes.h"
 #include "IO/IO.h"
+#include "IO/Mouse.h"
 
 __attribute__((interrupt)) void PageFault_Handler(InteruptFrame* interuptFrame) {
 	GlobalTextRenderer->Color = 0xFFFF0000;
@@ -26,9 +27,9 @@ __attribute__((interrupt)) void GeneralProtectionFault_Handler(InteruptFrame* in
 __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame) {
 	uint8_t scancode = inb(0x60);
 
-	static bool CapslockOn = false;
-	static bool ShiftPressed = false;
-	static uint8_t PreviousScancodes[5] = {};
+	static bool capslockOn = false;
+	static bool shiftPressed = false;
+	static uint8_t previousScancodes[5] = {};
 
 	switch (scancode) {
 		case PS2Scancode_Pressed_Backspace: {
@@ -43,20 +44,20 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 		} break;
 
 		case PS2Scancode_Pressed_LeftShift: {
-			ShiftPressed = true;
+			shiftPressed = true;
 		} break;
 
 		case PS2Scancode_Released_LeftShift: {
-			ShiftPressed = false;
+			shiftPressed = false;
 		} break;
 
 		case PS2Scancode_Pressed_CapsLock: {
-			CapslockOn = !CapslockOn;
+			capslockOn = !capslockOn;
 			// TODO: Turn the CapsLock LED on
 		} break;
 
 		case 0x48: {
-			if (PreviousScancodes[0] == 0xE0) {
+			if (previousScancodes[0] == 0xE0) {
 				GlobalTextRenderer->CursorY -= GlobalTextRenderer->Font->Header->CharSize;
 			} else {
 				goto Default;
@@ -64,7 +65,7 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 		} break;
 
 		case 0x50: {
-			if (PreviousScancodes[0] == 0xE0) {
+			if (previousScancodes[0] == 0xE0) {
 				GlobalTextRenderer->CursorY += GlobalTextRenderer->Font->Header->CharSize;
 			} else {
 				goto Default;
@@ -72,7 +73,7 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 		} break;
 
 		case 0x4B: {
-			if (PreviousScancodes[0] == 0xE0) {
+			if (previousScancodes[0] == 0xE0) {
 				GlobalTextRenderer->CursorX -= 8;
 			} else {
 				goto Default;
@@ -80,7 +81,7 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 		} break;
 
 		case 0x4D: {
-			if (PreviousScancodes[0] == 0xE0) {
+			if (previousScancodes[0] == 0xE0) {
 				GlobalTextRenderer->CursorX += 8;
 			} else {
 				goto Default;
@@ -88,7 +89,7 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 		} break;
 
 		default: Default: {
-			char character = (ShiftPressed ^ CapslockOn
+			char character = (shiftPressed ^ capslockOn
 				? PS2Scancode_UppercaseASCII
 				: PS2Scancode_LowercaseASCII
 				)[scancode];
@@ -98,10 +99,16 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 		} break;
 	}
 
-	CopyMemory(PreviousScancodes + 1, PreviousScancodes, 4);
-	PreviousScancodes[0] = scancode;
+	CopyMemory(previousScancodes + 1, previousScancodes, 4);
+	previousScancodes[0] = scancode;
 
 	PIC_EndMaster();
+}
+
+__attribute__((interrupt)) void MouseInt_Handler(InteruptFrame* interuptFrame) {
+	uint8_t mouseData = inb(0x60);
+	PS2Mouse_Handle(mouseData);
+	PIC_EndSlave();
 }
 
 void PIC_Remap(void) {

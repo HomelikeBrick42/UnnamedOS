@@ -11,7 +11,8 @@ typedef struct Framebuffer {
 	uint32_t PixelsPerScanLine;
 } Framebuffer;
 
-void PutPixel(Framebuffer* framebuffer, uint32_t x, uint32_t y, uint32_t color);
-void ClearScreen(Framebuffer* framebuffer, uint32_t color);
+void Framebuffer_PutPixel(Framebuffer* framebuffer, uint32_t x, uint32_t y, uint32_t color);
+void Framebuffer_DrawQuad(Framebuffer* framebuffer, uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t color);
+void Framebuffer_ClearScreen(Framebuffer* framebuffer, uint32_t color);
 
 extern Framebuffer* GlobalFramebuffer;
