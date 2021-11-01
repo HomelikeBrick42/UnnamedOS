@@ -79,7 +79,7 @@ static void SetupInterupts(void) {
 	SetIDTGate(KeyboardInt_Handler,            0x21, IDT_TA_InteruptGate, 0x08);
 	SetIDTGate(MouseInt_Handler,               0x2C, IDT_TA_InteruptGate, 0x08);
 
-	asm volatile ("lidt %0" : : "m" (GlobalIDTR));
+	SetInteruptTable(&GlobalIDTR);
 
 	PIC_Remap();
 }
@@ -105,7 +105,12 @@ void _start(BootInfo* bootInfo) {
 	while (true) {
 		PS2Mouse_ProcessPacket();
 		Renderer_DrawQuad((uint32_t)MouseX, (uint32_t)MouseY, 10, 10, 0xFFFF0000);
+
+		// TODO: Draw cursor
+		// Renderer_DrawQuad((uint32_t)GlobalCursorX, (uint32_t)GlobalCursorY, 2, Renderer_GetCharacterHeight(), 0xFFFF0000);
+
 		Renderer_SwapBuffers();
+
 		// asm volatile ("hlt");
 	}
 }

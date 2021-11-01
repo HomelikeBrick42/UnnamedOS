@@ -105,6 +105,10 @@ __attribute__((interrupt)) void MouseInt_Handler(InteruptFrame* interuptFrame) {
 	PIC_EndSlave();
 }
 
+void SetInteruptTable(IDTR* idtr) {
+	asm volatile ("lidt %0" : : "m" (*idtr));
+}
+
 void PIC_Remap(void) {
 	uint8_t a1, a2;
 

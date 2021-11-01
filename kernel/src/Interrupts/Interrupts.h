@@ -2,6 +2,8 @@
 
 #include "Common.h"
 
+#include "IDT.h"
+
 #define PIC1_COMMAND 0x20
 #define PIC1_DATA    0x21
 #define PIC2_COMMAND 0xA0
@@ -20,6 +22,8 @@ __attribute__((interrupt)) void DoubleFault_Handler(InteruptFrame* interuptFrame
 __attribute__((interrupt)) void GeneralProtectionFault_Handler(InteruptFrame* interuptFrame);
 __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame);
 __attribute__((interrupt)) void MouseInt_Handler(InteruptFrame* interuptFrame);
+
+void SetInteruptTable(IDTR* idtr);
 
 void PIC_Remap(void);
 void PIC_EndMaster(void);
