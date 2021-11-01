@@ -26,8 +26,8 @@ void PS2Mouse_Init(void) {
 
 static bool mousePacketReady = false;
 static uint8_t mousePacket[4] = {};
-int32_t MouseX = 20;
-int32_t MouseY = 50;
+int32_t MouseX = 0;
+int32_t MouseY = 0;
 void PS2Mouse_Handle(uint8_t data) {
 	static uint8_t mouseCycle = 0;
 
