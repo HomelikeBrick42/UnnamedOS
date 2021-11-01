@@ -1,6 +1,7 @@
 #include "Interrupts.h"
 
 #include "Graphics/TextRenderer.h"
+#include "Memory/Memory.h"
 #include "IO/PS2Scancodes.h"
 #include "IO/IO.h"
 
@@ -27,6 +28,7 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 
 	static bool CapslockOn = false;
 	static bool ShiftPressed = false;
+	static uint8_t PreviousScancodes[5] = {};
 
 	switch (scancode) {
 		case PS2Scancode_Pressed_Backspace: {
@@ -53,7 +55,39 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 			// TODO: Turn the CapsLock LED on
 		} break;
 
-		default: {
+		case 0x48: {
+			if (PreviousScancodes[0] == 0xE0) {
+				GlobalTextRenderer->CursorY -= GlobalTextRenderer->Font->Header->CharSize;
+			} else {
+				goto Default;
+			}
+		} break;
+
+		case 0x50: {
+			if (PreviousScancodes[0] == 0xE0) {
+				GlobalTextRenderer->CursorY += GlobalTextRenderer->Font->Header->CharSize;
+			} else {
+				goto Default;
+			}
+		} break;
+
+		case 0x4B: {
+			if (PreviousScancodes[0] == 0xE0) {
+				GlobalTextRenderer->CursorX -= 8;
+			} else {
+				goto Default;
+			}
+		} break;
+
+		case 0x4D: {
+			if (PreviousScancodes[0] == 0xE0) {
+				GlobalTextRenderer->CursorX += 8;
+			} else {
+				goto Default;
+			}
+		} break;
+
+		default: Default: {
 			char character = (ShiftPressed ^ CapslockOn
 				? PS2Scancode_UppercaseASCII
 				: PS2Scancode_LowercaseASCII
@@ -63,6 +97,9 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 			}
 		} break;
 	}
+
+	CopyMemory(PreviousScancodes + 1, PreviousScancodes, 4);
+	PreviousScancodes[0] = scancode;
 
 	PIC_EndMaster();
 }
