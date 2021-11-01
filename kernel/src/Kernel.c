@@ -1,7 +1,7 @@
 #include "Common.h"
 #include "Graphics/Framebuffer.h"
 #include "Graphics/PSF1_Font.h"
-#include "Graphics/TextRenderer.h"
+#include "Graphics/Renderer.h"
 #include "Memory/EfiMemory.h"
 #include "Memory/Memory.h"
 #include "Memory/Bitmap.h"
@@ -24,32 +24,6 @@ typedef struct BootInfo {
 extern uint64_t _KernelStart;
 extern uint64_t _KernelEnd;
 
-static void PrintMemoryUsage(void) {
-	GlobalTextRenderer->Color = 0xFF00FF00;
-	TextRenderer_PutString(GlobalTextRenderer, "Total Memory Size: ");
-	GlobalTextRenderer->Color = 0xFFFF00FF;
-	TextRenderer_PutUInt(GlobalTextRenderer, PageFrameAllocator_GetMemorySize() / 1024);
-	TextRenderer_PutString(GlobalTextRenderer, " KB\r\n");
-
-	GlobalTextRenderer->Color = 0xFF00FF00;
-	TextRenderer_PutString(GlobalTextRenderer, "Free Memory Size: ");
-	GlobalTextRenderer->Color = 0xFFFF00FF;
-	TextRenderer_PutUInt(GlobalTextRenderer, PageFrameAllocator_GetFreeMemory() / 1024);
-	TextRenderer_PutString(GlobalTextRenderer, " KB\r\n");
-
-	GlobalTextRenderer->Color = 0xFF00FF00;
-	TextRenderer_PutString(GlobalTextRenderer, "Used Memory Size: ");
-	GlobalTextRenderer->Color = 0xFFFF00FF;
-	TextRenderer_PutUInt(GlobalTextRenderer, PageFrameAllocator_GetUsedMemory() / 1024);
-	TextRenderer_PutString(GlobalTextRenderer, " KB\r\n");
-
-	GlobalTextRenderer->Color = 0xFF00FF00;
-	TextRenderer_PutString(GlobalTextRenderer, "Reserved Memory Size: ");
-	GlobalTextRenderer->Color = 0xFFFF00FF;
-	TextRenderer_PutUInt(GlobalTextRenderer, PageFrameAllocator_GetReservedMemory() / 1024);
-	TextRenderer_PutString(GlobalTextRenderer, " KB\r\n");
-}
-
 static bool SetupPagesAndMemoryMapping(BootInfo* bootInfo) {
 	GDTDescriptor gdtDescriptor = {};
 	gdtDescriptor.Size = sizeof(GDT) - 1;
@@ -57,8 +31,7 @@ static bool SetupPagesAndMemoryMapping(BootInfo* bootInfo) {
 	LoadGDT(&gdtDescriptor);
 
 	if (!PageFrameAllocator_Init(bootInfo->MemoryMapDescriptors, bootInfo->MemoryMapSize, bootInfo->MemoryMapDescriptorSize)) {
-		GlobalTextRenderer->Color = 0xFFFF0000;
-		TextRenderer_PutString(GlobalTextRenderer, "Failed to iniialize PageFrameAllocator\r\n");
+		Renderer_DrawString("Failed to iniialize PageFrameAllocator\r\n", GlobalBaseCursorX, &GlobalCursorX, &GlobalCursorY, 0xFFFF0000);
 		return false;
 	}
 
@@ -112,21 +85,13 @@ static void SetupInterupts(void) {
 }
 
 void _start(BootInfo* bootInfo) {
-	GlobalFramebuffer = bootInfo->Framebuffer;
-
-	//                           A R G B
-	uint32_t backgroundColor = 0xFF224488;
-
-	TextRenderer textRenderer;
-	TextRenderer_Create(&textRenderer, GlobalFramebuffer, bootInfo->Font, 10, 20, backgroundColor, 0xFF00FF00);
-
-	GlobalTextRenderer = &textRenderer;
+	Renderer_Init(bootInfo->Framebuffer, bootInfo->Font);
 
 	if (!SetupPagesAndMemoryMapping(bootInfo)) {
 		return;
 	}
 
-	Framebuffer_ClearScreen(GlobalFramebuffer, backgroundColor);
+	Renderer_Clear(0xFF224488);
 
 	SetupInterupts();
 
@@ -136,10 +101,6 @@ void _start(BootInfo* bootInfo) {
 	outb(PIC2_DATA, 0b11101111);
 
 	asm volatile ("sti");
-
-	PrintMemoryUsage();
-	
-	GlobalTextRenderer->Color = 0xFF00FF00;
 
 	while (true) {
 		PS2Mouse_ProcessPacket();

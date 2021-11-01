@@ -1,26 +1,23 @@
 #include "Interrupts.h"
 
-#include "Graphics/TextRenderer.h"
+#include "Graphics/Renderer.h"
 #include "Memory/Memory.h"
 #include "IO/PS2Scancodes.h"
 #include "IO/IO.h"
 #include "IO/Mouse.h"
 
 __attribute__((interrupt)) void PageFault_Handler(InteruptFrame* interuptFrame) {
-	GlobalTextRenderer->Color = 0xFFFF0000;
-	TextRenderer_PutString(GlobalTextRenderer, "Page fault detected\r\n");
+	Renderer_DrawString("Page fault detected\r\n", GlobalBaseCursorX, &GlobalCursorX, &GlobalCursorY, 0xFFFF0000);
 	while (true);
 }
 
 __attribute__((interrupt)) void DoubleFault_Handler(InteruptFrame* interuptFrame) {
-	GlobalTextRenderer->Color = 0xFFFF0000;
-	TextRenderer_PutString(GlobalTextRenderer, "Double fault detected\r\n");
+	Renderer_DrawString("Double fault detected\r\n", GlobalBaseCursorX, &GlobalCursorX, &GlobalCursorY, 0xFFFF0000);
 	while (true);
 }
 
 __attribute__((interrupt)) void GeneralProtectionFault_Handler(InteruptFrame* interuptFrame) {
-	GlobalTextRenderer->Color = 0xFFFF0000;
-	TextRenderer_PutString(GlobalTextRenderer, "General Protection fault detected\r\n");
+	Renderer_DrawString("General Protection fault detected\r\n", GlobalBaseCursorX, &GlobalCursorX, &GlobalCursorY, 0xFFFF0000);
 	while (true);
 }
 
@@ -33,14 +30,11 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 
 	switch (scancode) {
 		case PS2Scancode_Pressed_Backspace: {
-			// TODO: Find a better way to do this
-			GlobalTextRenderer->CursorX -= 8;
-			TextRenderer_PutChar(GlobalTextRenderer, ' ');
-			GlobalTextRenderer->CursorX -= 8;
+			// TODO: Find a way to do this
 		} break;
 
 		case PS2Scancode_Pressed_Enter: {
-			TextRenderer_PutString(GlobalTextRenderer, "\r\n");
+			Renderer_DrawString("\r\n", GlobalBaseCursorX, &GlobalCursorX, &GlobalCursorY, 0xFF00FF00);
 		} break;
 
 		case PS2Scancode_Pressed_LeftShift: {
@@ -58,7 +52,7 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 
 		case 0x48: {
 			if (previousScancodes[0] == 0xE0) {
-				GlobalTextRenderer->CursorY -= GlobalTextRenderer->Font->Header->CharSize;
+				GlobalCursorY -= Renderer_GetCharacterHeight();
 			} else {
 				goto Default;
 			}
@@ -66,7 +60,7 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 
 		case 0x50: {
 			if (previousScancodes[0] == 0xE0) {
-				GlobalTextRenderer->CursorY += GlobalTextRenderer->Font->Header->CharSize;
+				GlobalCursorY += Renderer_GetCharacterHeight();
 			} else {
 				goto Default;
 			}
@@ -74,7 +68,7 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 
 		case 0x4B: {
 			if (previousScancodes[0] == 0xE0) {
-				GlobalTextRenderer->CursorX -= 8;
+				GlobalCursorX -= Renderer_GetCharacterWidth();
 			} else {
 				goto Default;
 			}
@@ -82,7 +76,7 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 
 		case 0x4D: {
 			if (previousScancodes[0] == 0xE0) {
-				GlobalTextRenderer->CursorX += 8;
+				GlobalCursorX += Renderer_GetCharacterWidth();
 			} else {
 				goto Default;
 			}
@@ -94,7 +88,7 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 				: PS2Scancode_LowercaseASCII
 				)[scancode];
 			if (character) {
-				TextRenderer_PutChar(GlobalTextRenderer, character);
+				Renderer_DrawCharacter(character, GlobalBaseCursorX, &GlobalCursorX, &GlobalCursorY, 0xFF00FF00);
 			}
 		} break;
 	}

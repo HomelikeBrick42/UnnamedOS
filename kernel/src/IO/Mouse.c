@@ -1,6 +1,6 @@
 #include "Mouse.h"
 
-#include "Graphics/Framebuffer.h"
+#include "Graphics/Renderer.h"
 #include "IO/IO.h"
 
 void PS2Mouse_Init(void) {
@@ -103,10 +103,10 @@ void PS2Mouse_ProcessPacket(void) {
 	if (MouseX < 0) MouseX = 0;
 	if (MouseY < 0) MouseY = 0;
 
-	if (MouseX >= GlobalFramebuffer->Width) MouseX = GlobalFramebuffer->Width;
-	if (MouseY >= GlobalFramebuffer->Height) MouseY = GlobalFramebuffer->Height;
+	if (MouseX >= Renderer_GetWidth()) MouseX = Renderer_GetWidth();
+	if (MouseY >=Renderer_GetHeight()) MouseY = Renderer_GetHeight();
 
-	Framebuffer_DrawQuad(GlobalFramebuffer, (uint32_t)MouseX, (uint32_t)MouseY, 10, 10, 0xFFFF0000);
+	Renderer_DrawQuad((uint32_t)MouseX, (uint32_t)MouseY, 10, 10, 0xFFFF0000);
 }
 
 void PS2Mouse_Write(uint8_t value) {
