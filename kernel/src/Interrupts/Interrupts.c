@@ -7,21 +7,25 @@
 #include "IO/Mouse.h"
 
 __attribute__((interrupt)) void PageFault_Handler(InteruptFrame* interuptFrame) {
+	(void)interuptFrame;
 	Renderer_DrawString("Page fault detected\r\n", GlobalBaseCursorX, &GlobalCursorX, &GlobalCursorY, 0xFFFF0000);
 	while (true);
 }
 
 __attribute__((interrupt)) void DoubleFault_Handler(InteruptFrame* interuptFrame) {
+	(void)interuptFrame;
 	Renderer_DrawString("Double fault detected\r\n", GlobalBaseCursorX, &GlobalCursorX, &GlobalCursorY, 0xFFFF0000);
 	while (true);
 }
 
 __attribute__((interrupt)) void GeneralProtectionFault_Handler(InteruptFrame* interuptFrame) {
+	(void)interuptFrame;
 	Renderer_DrawString("General Protection fault detected\r\n", GlobalBaseCursorX, &GlobalCursorX, &GlobalCursorY, 0xFFFF0000);
 	while (true);
 }
 
 __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame) {
+	(void)interuptFrame;
 	uint8_t scancode = inb(0x60);
 
 	static bool capslockOn = false;
@@ -100,6 +104,7 @@ __attribute__((interrupt)) void KeyboardInt_Handler(InteruptFrame* interuptFrame
 }
 
 __attribute__((interrupt)) void MouseInt_Handler(InteruptFrame* interuptFrame) {
+	(void)interuptFrame;
 	uint8_t mouseData = inb(0x60);
 	PS2Mouse_Handle(mouseData);
 	PIC_EndSlave();

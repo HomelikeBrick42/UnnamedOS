@@ -10,10 +10,10 @@ static uint64_t ReservedMemory;
 static uint64_t UsedMemory;
 
 static uint64_t GetMemorySize(EfiMemoryDescriptor* memoryMapDescriptors, uint64_t memoryMapEntries, uint64_t memoryMapDescriptorSize);
-static void UnreservePage(void* address);
-static void UnreservePages(void* address, uint64_t count);
-static void ReservePage(void* address);
-static void ReservePages(void* address, uint64_t count);
+void PageFrameAllocator_UnreservePage(void* address);
+void PageFrameAllocator_UnreservePages(void* address, uint64_t count);
+void PageFrameAllocator_ReservePage(void* address);
+void PageFrameAllocator_ReservePages(void* address, uint64_t count);
 
 uint8_t PageFrameAllocator_Init(EfiMemoryDescriptor* memoryMapDescriptors, uint64_t memoryMapSize, uint64_t memoryMapDescriptorSize) {
 	uint64_t memoryMapEntries = memoryMapSize / memoryMapDescriptorSize;
@@ -49,7 +49,7 @@ uint8_t PageFrameAllocator_Init(EfiMemoryDescriptor* memoryMapDescriptors, uint6
 	for (uint64_t i = 0; i < memoryMapEntries; i++) {
 		EfiMemoryDescriptor* descriptor = (EfiMemoryDescriptor*)((uint64_t)memoryMapDescriptors + i * memoryMapDescriptorSize);
 		if (descriptor->Type != EfiMemoryType_ConventionalMemory) {
-			ReservePages(descriptor->PhysicalAddress, descriptor->NumPages);
+			PageFrameAllocator_ReservePages(descriptor->PhysicalAddress, descriptor->NumPages);
 		}
 	}
 
@@ -132,7 +132,7 @@ void PageFrameAllocator_LockPages(void* address, uint64_t count) {
 	}
 }
 
-static void UnreservePage(void* address) {
+void PageFrameAllocator_UnreservePage(void* address) {
 	uint64_t index = (uint64_t)address / 4096;
 	if (!Bitmap_GetBit(&PageBitmap, index)) {
 		return;
@@ -146,13 +146,13 @@ static void UnreservePage(void* address) {
 	}
 }
 
-static void UnreservePages(void* address, uint64_t count) {
+void PageFrameAllocator_UnreservePages(void* address, uint64_t count) {
 	for (uint64_t i = 0; i < count; i++) {
-		UnreservePage((void*)((uint64_t)address + i * 4096));
+		PageFrameAllocator_UnreservePage((void*)((uint64_t)address + i * 4096));
 	}
 }
 
-static void ReservePage(void* address) {
+void PageFrameAllocator_ReservePage(void* address) {
 	uint64_t index = (uint64_t)address / 4096;
 	if (Bitmap_GetBit(&PageBitmap, index)) {
 		return;
@@ -163,8 +163,8 @@ static void ReservePage(void* address) {
 	}
 }
 
-static void ReservePages(void* address, uint64_t count) {
+void PageFrameAllocator_ReservePages(void* address, uint64_t count) {
 	for (uint64_t i = 0; i < count; i++) {
-		ReservePage((void*)((uint64_t)address + i * 4096));
+		PageFrameAllocator_ReservePage((void*)((uint64_t)address + i * 4096));
 	}
 }

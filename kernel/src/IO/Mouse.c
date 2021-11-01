@@ -103,8 +103,8 @@ void PS2Mouse_ProcessPacket(void) {
 	if (MouseX < 0) MouseX = 0;
 	if (MouseY < 0) MouseY = 0;
 
-	if (MouseX >= Renderer_GetWidth()) MouseX = Renderer_GetWidth();
-	if (MouseY >=Renderer_GetHeight()) MouseY = Renderer_GetHeight();
+	if ((uint32_t)MouseX >= Renderer_GetWidth()) MouseX = Renderer_GetWidth();
+	if ((uint32_t)MouseY >=Renderer_GetHeight()) MouseY = Renderer_GetHeight();
 }
 
 void PS2Mouse_Write(uint8_t value) {

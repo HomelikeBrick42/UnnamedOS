@@ -30,6 +30,7 @@ uint32_t Renderer_GetCharacterHeight(void) {
 
 void Renderer_SwapBuffers(void) {
 	// TODO: Make backbuffer
+	// TODO: Only copy changed pixels
 }
 
 void Renderer_Clear(uint32_t color) {
