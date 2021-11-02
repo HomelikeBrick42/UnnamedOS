@@ -3,6 +3,9 @@
 #include "Memory/Memory.h"
 #include "Memory/Bitmap.h"
 
+// TODO: Remove
+#include "Graphics/Renderer.h"
+
 static Bitmap PageBitmap;
 static uint64_t MemorySize;
 static uint64_t FreeMemory;
@@ -44,14 +47,18 @@ uint8_t PageFrameAllocator_Init(EfiMemoryDescriptor* memoryMapDescriptors, uint6
 	PageBitmap.Buffer = largestFreeMemorySegment;
 	SetMemory(PageBitmap.Buffer, 0, bitMapSize);
 
-	PageFrameAllocator_LockPages(PageBitmap.Buffer, bitMapSize);
+	PageFrameAllocator_ReservePages(0, MemorySize / 4096 + 1);
 
 	for (uint64_t i = 0; i < memoryMapEntries; i++) {
 		EfiMemoryDescriptor* descriptor = (EfiMemoryDescriptor*)((uint64_t)memoryMapDescriptors + i * memoryMapDescriptorSize);
-		if (descriptor->Type != EfiMemoryType_ConventionalMemory) {
-			PageFrameAllocator_ReservePages(descriptor->PhysicalAddress, descriptor->NumPages);
+		if (descriptor->Type == EfiMemoryType_ConventionalMemory) {
+			PageFrameAllocator_UnreservePages(descriptor->PhysicalAddress, descriptor->NumPages);
 		}
 	}
+
+	PageFrameAllocator_ReservePages(0, 0x100);
+
+	PageFrameAllocator_LockPages(PageBitmap.Buffer, bitMapSize);
 
 	return 1;
 }
@@ -85,22 +92,22 @@ void* PageFrameAllocator_RequestPage(void) {
 }
 
 void* PageFrameAllocator_RequestPages(uint64_t pageCount) {
-	uint64_t startIndex = PageBitmapIndex;
+	uint64_t startIndex = 0;
 	uint64_t freePageCount = 0;
 	for (uint64_t i = PageBitmapIndex; i < PageBitmap.Size; i++) {
-		if (!Bitmap_GetBit(&PageBitmap, PageBitmapIndex)) {
+		if (!Bitmap_GetBit(&PageBitmap, i)) {
 			if (freePageCount == 0) {
 				startIndex = i;
 			}
 			freePageCount++;
+
+			if (freePageCount >= pageCount) {
+				void* address = (void*)(startIndex * 4096);
+				PageFrameAllocator_LockPages(address, pageCount);
+				return address;
+			}
 		} else {
 			freePageCount = 0;
-		}
-
-		if (freePageCount >= pageCount) {
-			void* address = (void*)(startIndex * 4096);
-			PageFrameAllocator_LockPages(address, pageCount);
-			return address;
 		}
 	}
 	return NULL;

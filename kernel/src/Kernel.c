@@ -31,7 +31,6 @@ static bool SetupPagesAndMemoryMapping(BootInfo* bootInfo) {
 	LoadGDT(&gdtDescriptor);
 
 	if (!PageFrameAllocator_Init(bootInfo->MemoryMapDescriptors, bootInfo->MemoryMapSize, bootInfo->MemoryMapDescriptorSize)) {
-		Renderer_DrawString("Failed to iniialize PageFrameAllocator\r\n", GlobalBaseCursorX, &GlobalCursorX, &GlobalCursorY, 0xFFFF0000);
 		return false;
 	}
 
@@ -80,8 +79,6 @@ static void SetupInterupts(void) {
 }
 
 void _start(BootInfo* bootInfo) {
-	Renderer_Init(bootInfo->Framebuffer, bootInfo->Font);
-
 	if (!SetupPagesAndMemoryMapping(bootInfo)) {
 		return;
 	}
@@ -95,14 +92,15 @@ void _start(BootInfo* bootInfo) {
 
 	asm volatile ("sti");
 
-	Renderer_Clear(0xFF224488);
+	Renderer_Init(bootInfo->Framebuffer, bootInfo->Font);
 
 	while (true) {
-		PS2Mouse_ProcessPacket();
+		Renderer_Clear(0xFF224488);
+
 		Renderer_DrawQuad((uint32_t)MouseX, (uint32_t)MouseY, 10, 10, 0xFFFF0000);
 
 		// TODO: Draw cursor
-		// Renderer_DrawQuad((uint32_t)GlobalCursorX, (uint32_t)GlobalCursorY, 2, Renderer_GetCharacterHeight(), 0xFFFF0000);
+		Renderer_DrawQuad((uint32_t)GlobalCursorX, (uint32_t)GlobalCursorY, 2, Renderer_GetCharacterHeight(), 0xFF00FF00);
 
 		Renderer_SwapBuffers();
 

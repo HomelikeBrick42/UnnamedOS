@@ -1,15 +1,29 @@
 #include "Renderer.h"
 
+#include "Memory/Paging/PageFrameAllocator.h"
+#include "Memory/Memory.h"
+
 uint32_t GlobalBaseCursorX = 0;
 uint32_t GlobalCursorX = 0;
 uint32_t GlobalCursorY = 0;
 
 static Framebuffer* TargetFramebuffer = NULL;
+static uint32_t* FrontBuffer = NULL;
+static uint32_t* BackBuffer = NULL;
+static bool* ChangedBuffer = NULL;
 static PSF1_Font* Font = NULL;
 
 void Renderer_Init(Framebuffer* framebuffer, PSF1_Font* font) {
 	TargetFramebuffer = framebuffer;
 	Font = font;
+
+	FrontBuffer = TargetFramebuffer->BaseAddress;
+
+	BackBuffer = PageFrameAllocator_RequestPages(TargetFramebuffer->Width * TargetFramebuffer->Height * sizeof(uint32_t) / 4096 + 1);
+	SetMemory(BackBuffer, 0, TargetFramebuffer->Width * TargetFramebuffer->Height * sizeof(uint32_t));
+
+	ChangedBuffer = PageFrameAllocator_RequestPages(TargetFramebuffer->Width * TargetFramebuffer->Height * sizeof(bool) / 4096 + 1);
+	SetMemory(ChangedBuffer, 0, TargetFramebuffer->Width * TargetFramebuffer->Height * sizeof(bool));
 }
 
 uint32_t Renderer_GetWidth(void) {
@@ -29,17 +43,34 @@ uint32_t Renderer_GetCharacterHeight(void) {
 }
 
 void Renderer_SwapBuffers(void) {
-	// TODO: Make backbuffer
-	// TODO: Only copy changed pixels
+	uint32_t* backLine = BackBuffer;
+	uint32_t* frontLine = FrontBuffer;
+	bool* changedLine = ChangedBuffer;
+	for (uint32_t y = 0; y < TargetFramebuffer->Height; y++) {
+		for (uint32_t x = 0; x < TargetFramebuffer->Width; x++) {
+			if (changedLine[x]) {
+				frontLine[x] = backLine[x];
+				changedLine[x] = false;
+			}
+		}
+		backLine += TargetFramebuffer->Width;
+		frontLine += TargetFramebuffer->PixelsPerScanLine;
+		changedLine += TargetFramebuffer->Width;
+	}
 }
 
 void Renderer_Clear(uint32_t color) {
-	uint32_t* line = TargetFramebuffer->BaseAddress;
+	uint32_t* line = BackBuffer;
+	bool* changedLine = ChangedBuffer;
 	for (uint32_t y = 0; y < TargetFramebuffer->Height; y++) {
 		for (uint32_t x = 0; x < TargetFramebuffer->Width; x++) {
-			line[x] = color;
+			if (line[x] != color) {
+				line[x] = color;
+				changedLine[x] = true;
+			}
 		}
-		line += TargetFramebuffer->PixelsPerScanLine;
+		line += TargetFramebuffer->Width;
+		changedLine += TargetFramebuffer->Width;
 	}
 }
 
@@ -47,7 +78,7 @@ void Renderer_DrawPixel(uint32_t x, uint32_t y, uint32_t color) {
 	if (x > TargetFramebuffer->Width || y > TargetFramebuffer->Height) {
 		return;
 	}
-	*((uint32_t*)TargetFramebuffer->BaseAddress + x + y * TargetFramebuffer->PixelsPerScanLine) = color;
+	BackBuffer[x + y * TargetFramebuffer->Width] = color;
 }
 
 void Renderer_DrawCharacter(char character, uint32_t baseX, uint32_t* x, uint32_t* y, uint32_t color) {
@@ -123,21 +154,26 @@ void Renderer_DrawInt(int64_t value, uint32_t* x, uint32_t* y, uint32_t color) {
 }
 
 void Renderer_DrawQuad(uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t color) {
-	uint32_t* line = (uint32_t*)TargetFramebuffer->BaseAddress + x + y * TargetFramebuffer->PixelsPerScanLine;
+	uint32_t* line = BackBuffer + y * TargetFramebuffer->Width;
+	bool* changedLine = ChangedBuffer + y * TargetFramebuffer->Width;
 
 	for (uint32_t yOff = 0; yOff < height; yOff++) {
-		if (y + yOff > TargetFramebuffer->Height) {
+		if (yOff > TargetFramebuffer->Height) {
 			break;
 		}
 
 		for (uint32_t xOff = 0; xOff < width; xOff++) {
-			if (x + xOff > TargetFramebuffer->Width) {
+			if (xOff > TargetFramebuffer->Width) {
 				break;
 			}
 
-			line[xOff] = color;
+			if (line[x + xOff] != color) {
+				line[x + xOff] = color;
+				changedLine[x + xOff] = true;
+			}
 		}
 
-		line += TargetFramebuffer->PixelsPerScanLine;
+		line += TargetFramebuffer->Width;
+		changedLine += TargetFramebuffer->Width;
 	}
 }

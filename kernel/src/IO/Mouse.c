@@ -31,11 +31,15 @@ int32_t MouseY = 0;
 void PS2Mouse_Handle(uint8_t data) {
 	static uint8_t mouseCycle = 0;
 
+	PS2Mouse_ProcessPacket();
+	static bool skip = true;
+	if (skip) {
+		skip = false;
+		return;
+	}
+
 	switch (mouseCycle) {
 		case 0: {
-			if (mousePacketReady) {
-				break;
-			}
 			if ((data & 0b00001000) == 0) {
 				break;
 			}
@@ -44,17 +48,11 @@ void PS2Mouse_Handle(uint8_t data) {
 		} break;
 
 		case 1: {
-			if (mousePacketReady) {
-				break;
-			}
 			mousePacket[1] = data;
 			mouseCycle++;
 		} break;
 
 		case 2: {
-			if (mousePacketReady) {
-				break;
-			}
 			mousePacket[2] = data;
 			mouseCycle = 0;
 			mousePacketReady = true;
